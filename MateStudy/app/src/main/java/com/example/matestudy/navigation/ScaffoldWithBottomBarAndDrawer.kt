@@ -15,12 +15,12 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.NavigationDrawerItem
 import kotlinx.coroutines.launch
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.NavigationBar
@@ -31,8 +31,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.IconButton
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material3.MaterialTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +42,7 @@ fun ScaffoldWithBottomBarAndDrawer(
     onLogout: () -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val currentRoute by bottomNavController.currentBackStackEntryAsState()
 
@@ -50,7 +50,11 @@ fun ScaffoldWithBottomBarAndDrawer(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                Text("MATestudy", modifier = Modifier.padding(16.dp), style = typography.headlineMedium)
+                Text(
+                    text = "MATestudy",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.headlineMedium
+                )
                 HorizontalDivider()
 
                 NavigationDrawerItem(
@@ -60,7 +64,7 @@ fun ScaffoldWithBottomBarAndDrawer(
                         bottomNavController.navigate(BottomNavItem.Profile.route)
                         scope.launch { drawerState.close() }
                     },
-                    icon = { Icon(Icons.Default.Person, null) }
+                    icon = { Icon(Icons.Default.Person, contentDescription = null) }
                 )
 
                 NavigationDrawerItem(
@@ -70,14 +74,17 @@ fun ScaffoldWithBottomBarAndDrawer(
                         bottomNavController.navigate("change_password")
                         scope.launch { drawerState.close() }
                     },
-                    icon = { Icon(Icons.Default.Lock, null) }
+                    icon = { Icon(Icons.Default.Lock, contentDescription = null) }
                 )
 
                 NavigationDrawerItem(
                     label = { Text("Đăng xuất") },
                     selected = false,
-                    onClick = onLogout,
-                    icon = { Icon(Icons.Default.Logout, null) }
+                    onClick = {
+                        onLogout()
+                        scope.launch { drawerState.close() }
+                    },
+                    icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) }
                 )
             }
         }
@@ -88,7 +95,7 @@ fun ScaffoldWithBottomBarAndDrawer(
                     title = { Text("MATestudy") },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, "Menu")
+                            Icon(Icons.Default.Menu, contentDescription = "Menu")
                         }
                     }
                 )
