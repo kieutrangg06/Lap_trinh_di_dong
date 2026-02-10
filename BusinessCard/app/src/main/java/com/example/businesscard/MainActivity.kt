@@ -26,31 +26,32 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.businesscard.ui.theme.BusinessCardTheme  // giữ nếu có theme riêng
+import com.example.businesscard.ui.theme.BusinessCardTheme
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
+    override fun onCreate(savedInstanceState: Bundle?) {//Hàm chạy khi app mở
+        super.onCreate(savedInstanceState)//bắt buộc
+        enableEdgeToEdge()//UI hiển thị full màn hình
+        setContent {//UI bằng Jetpack Compose
             BusinessCardTheme {  // nếu chưa có theme → thay bằng MaterialTheme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = Color(0xFFFFF0F5)  // hồng phấn nhạt ấm, sáng và nữ tính
+                Surface(//lớp nền chính
+                    modifier = Modifier.fillMaxSize(),//toàn màn
+                    color = Color(0xFFFFF0F5)
                 ) {
-                    BusinessCard()
+                    BusinessCard()//hàm vẽ giao diện danh thiếp
                 }
             }
         }
     }
 }
 
-@Composable
+@Composable//bắt buộc
 fun BusinessCard() {
-    Column(
+    Column(//chiều dọc
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),  // tăng padding cho thoáng hơn
+            .padding(32.dp),
+        //Căn giữa cả ngang & dọc
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -58,34 +59,35 @@ fun BusinessCard() {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
+            //Chiếm phần lớn không gian, Đẩy phần liên hệ xuống dưới
             modifier = Modifier.weight(1f)
         ) {
-            // Logo (giữ nguyên ảnh android_logo hoặc thay bằng ảnh cá nhân)
+            // Logo
             Image(
                 painter = painterResource(id = R.drawable.kieutrang),
                 contentDescription = "Logo",
                 modifier = Modifier
-                    .size(120.dp)  // hơi nhỏ lại cho thanh thoát
+                    .size(120.dp)
                     .background(
-                        Color(0xFFFFC1CC).copy(alpha = 0.25f),  // hồng đào nhạt mờ
+                        Color(0xFFFFC1CC).copy(alpha = 0.25f),
                         shape = MaterialTheme.shapes.medium
                     )
                     .padding(20.dp)
             )
-
+            //khoảng trống
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
                 text = "Kiều Trang",
                 fontSize = 50.sp,
-                fontWeight = FontWeight.Medium,  // nhẹ hơn Light một chút, thanh lịch
-                color = Color(0xFF4A4A6A)  // xám tím đậm nhẹ, dễ nhìn trên nền sáng
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF4A4A6A)
             )
 
             Text(
                 text = "24IT280",
                 fontSize = 22.sp,
-                color = Color(0xFFFF8CAB),  // hồng đào nổi bật, nữ tính
+                color = Color(0xFFFF8CAB),
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.2.sp,
                 textAlign = TextAlign.Center
@@ -103,7 +105,7 @@ fun BusinessCard() {
                 icon = Icons.Default.Phone,
                 text = "0354491100",
                 contentDescription = "Số điện thoại",
-                accentColor = Color(0xFFFF8CAB)  // hồng đào
+                accentColor = Color(0xFFFF8CAB)
             )
             ContactItem(
                 icon = Icons.Default.Share,
@@ -126,7 +128,7 @@ fun ContactItem(
     icon: ImageVector,
     text: String,
     contentDescription: String,
-    accentColor: Color = Color(0xFFFF8CAB)  // thêm tham số để dễ đổi màu
+    accentColor: Color = Color(0xFFFF8CAB)
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -142,7 +144,7 @@ fun ContactItem(
         Spacer(modifier = Modifier.width(28.dp))
         Text(
             text = text,
-            color = Color(0xFF4A4A6A),  // giữ chữ tối để dễ đọc
+            color = Color(0xFF4A4A6A),
             fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Start
@@ -150,6 +152,7 @@ fun ContactItem(
     }
 }
 
+//xem trước UI không cần chạy app
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun BusinessCardPreview() {
