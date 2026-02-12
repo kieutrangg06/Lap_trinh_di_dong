@@ -2,7 +2,6 @@ package com.example.matestudy.navigation
 
 import ProfileScreen
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -21,6 +20,8 @@ import com.example.matestudy.data.repository.ForumRepository
 import com.example.matestudy.ui.screen.*
 import com.example.matestudy.ui.viewmodel.AuthViewModel
 import com.example.matestudy.ui.viewmodel.ForumViewModel
+import com.example.matestudy.ui.viewmodel.ScheduleViewModel
+import com.example.matestudy.data.repository.ScheduleRepository
 
 @Composable
 fun AppNavGraph() {
@@ -176,6 +177,27 @@ private fun MainAppScreen(
                     viewModel = forumViewModel,
                     postId = postId,
                     onBack = { bottomNavController.popBackStack() }
+                )
+            }
+
+            composable(BottomNavItem.Schedule.route) {
+                // Truyền ScheduleViewModel tương tự như cách bạn làm với forumViewModel
+                val scheduleViewModel: ScheduleViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            val db = AppDatabase.getDatabase(/* context - dùng LocalContext.current nếu cần */ android.app.Application())
+                            return ScheduleViewModel(
+                                scheduleRepository = ScheduleRepository(db),
+                                authRepository = AuthRepository(db)
+                            ) as T
+                        }
+                    }
+                )
+
+                ScheduleScreen(
+                    viewModel = scheduleViewModel,
+                    onNavigateToAddEvent = { /* navigate đến add event screen */ },
+                    onNavigateToChooseClass = { /* navigate đến choose class */ }
                 )
             }
 
