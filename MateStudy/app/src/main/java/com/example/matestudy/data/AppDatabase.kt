@@ -23,7 +23,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun monHocDao(): MonHocDao
     abstract fun lichCaNhanDao(): LichCaNhanDao
     abstract fun skCaNhanDao(): SkCaNhanDao
-    abstract fun reviewDao(): ReviewDao // Thêm mới
+    abstract fun reviewDao(): ReviewDao
 
     companion object {
         @Volatile
