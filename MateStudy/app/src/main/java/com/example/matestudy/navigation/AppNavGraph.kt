@@ -29,7 +29,7 @@ fun AppNavGraph() {
     val authViewModel: AuthViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val db = AppDatabase.getDatabase(/* context */ android.app.Application()) // Thay bằng context thật nếu cần
+                val db = AppDatabase.getDatabase(android.app.Application())
                 return AuthViewModel(AuthRepository(db)) as T
             }
         }
@@ -103,12 +103,10 @@ private fun MainAppScreen(
 ) {
     val bottomNavController = rememberNavController()
 
-    // Khởi tạo ForumViewModel (cần context để lấy database)
     val forumViewModel: ForumViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val context = android.app.Application() // Hoặc dùng LocalContext.current nếu trong composable
-                val db = AppDatabase.getDatabase(context)
+                val db = AppDatabase.getDatabase(android.app.Application())
                 return ForumViewModel(
                     forumRepository = ForumRepository(db),
                     authRepository = AuthRepository(db)
@@ -158,7 +156,6 @@ private fun MainAppScreen(
                 )
             }
 
-            // Màn đăng bài mới
             composable("new_post") {
                 NewPostScreen(
                     viewModel = forumViewModel,
@@ -167,7 +164,6 @@ private fun MainAppScreen(
                 )
             }
 
-            // Màn chi tiết bài viết + bình luận
             composable(
                 route = "post_detail/{postId}",
                 arguments = listOf(navArgument("postId") { type = NavType.LongType })
@@ -181,11 +177,10 @@ private fun MainAppScreen(
             }
 
             composable(BottomNavItem.Schedule.route) {
-                // Truyền ScheduleViewModel tương tự như cách bạn làm với forumViewModel
                 val scheduleViewModel: ScheduleViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            val db = AppDatabase.getDatabase(/* context - dùng LocalContext.current nếu cần */ android.app.Application())
+                            val db = AppDatabase.getDatabase(android.app.Application())
                             return ScheduleViewModel(
                                 scheduleRepository = ScheduleRepository(db),
                                 authRepository = AuthRepository(db)
@@ -196,15 +191,49 @@ private fun MainAppScreen(
 
                 ScheduleScreen(
                     viewModel = scheduleViewModel,
-                    onNavigateToAddEvent = { /* navigate đến add event screen */ },
-                    onNavigateToChooseClass = { /* navigate đến choose class */ }
+                    navController = bottomNavController
                 )
             }
 
-            // Các màn khác (nếu có) - bạn có thể thêm sau
-            // composable(BottomNavItem.Schedule.route) { ScheduleScreen() }
-            // composable(BottomNavItem.Rating.route) { RatingScreen() }
-            // ...
+            composable("add_personal_event") {
+                val scheduleViewModel: ScheduleViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            val db = AppDatabase.getDatabase(android.app.Application())
+                            return ScheduleViewModel(
+                                ScheduleRepository(db),
+                                AuthRepository(db)
+                            ) as T
+                        }
+                    }
+                )
+
+                AddEventScreen(
+                    viewModel = scheduleViewModel,
+                    onBack = { bottomNavController.popBackStack() },
+                    onSuccess = { bottomNavController.popBackStack() }
+                )
+            }
+
+            composable("choose_class") {
+                val scheduleViewModel: ScheduleViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            val db = AppDatabase.getDatabase(android.app.Application())
+                            return ScheduleViewModel(
+                                ScheduleRepository(db),
+                                AuthRepository(db)
+                            ) as T
+                        }
+                    }
+                )
+
+                ChooseClassScreen(
+                    viewModel = scheduleViewModel,
+                    onBack = { bottomNavController.popBackStack() }
+                    // KHÔNG cần truyền onSelect nữa nếu bạn đã xử lý bên trong ChooseClassScreen
+                )
+            }
         }
     }
 }

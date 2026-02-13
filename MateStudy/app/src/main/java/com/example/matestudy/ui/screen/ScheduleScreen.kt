@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.example.matestudy.ui.viewmodel.ScheduleViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -25,21 +26,21 @@ import java.time.LocalDate
 @Composable
 fun ScheduleScreen(
     viewModel: ScheduleViewModel,
-    onNavigateToAddEvent: () -> Unit,
-    onNavigateToChooseClass: () -> Unit
+    navController: NavHostController   // ← THÊM THAM SỐ NÀY
 ) {
     val currentMonth by viewModel.currentMonth.collectAsState()
     val events by viewModel.events.collectAsState()
     val selectedEvent by viewModel.selectedEvent.collectAsState()
 
-    val coroutineScope = rememberCoroutineScope()  // Để gọi suspend function
+    val coroutineScope = rememberCoroutineScope()
+
+    var showAddOptions by remember { mutableStateOf(false) }
 
     val daysOfWeek = listOf("CN", "Th 2", "Th 3", "Th 4", "Th 5", "Th 6", "Th 7")
 
-    Box(modifier = Modifier.fillMaxSize()) {  // Dùng Box để align FAB dễ dàng
-
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header tháng
+            // Header tháng (giữ nguyên)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -60,7 +61,6 @@ fun ScheduleScreen(
                 }
             }
 
-            // Days of week
             Row(modifier = Modifier.fillMaxWidth()) {
                 daysOfWeek.forEach { day ->
                     Text(
@@ -72,9 +72,9 @@ fun ScheduleScreen(
                 }
             }
 
-            // Calendar grid
+            // Grid lịch (giữ nguyên phần lớn)
             val firstOfMonth = currentMonth.withDayOfMonth(1)
-            val firstDayOfWeek = (firstOfMonth.dayOfWeek.value % 7)  // Sunday = 0, Monday = 1,...
+            val firstDayOfWeek = (firstOfMonth.dayOfWeek.value % 7)
             val daysInMonth = currentMonth.lengthOfMonth()
             val totalCells = 42
 
@@ -90,16 +90,13 @@ fun ScheduleScreen(
                         firstOfMonth.plusDays((day - 1).toLong())
                     } else null
 
-                    val dayEvents = date?.let { d ->
-                        events.filter { it.date == d }
-                    } ?: emptyList()
+                    val dayEvents = date?.let { d -> events.filter { it.date == d } } ?: emptyList()
 
                     Box(
                         modifier = Modifier
-                            .height(100.dp)  // Giảm chiều cao để vừa màn hình
+                            .height(100.dp)
                             .padding(2.dp)
                             .background(if (date != null) Color(0xFFF5F5F5) else Color.Transparent)
-                            .clickable { /* Có thể thêm chọn ngày nếu cần */ }
                     ) {
                         if (date != null) {
                             Text(
@@ -117,7 +114,7 @@ fun ScheduleScreen(
                                     val bgColor = try {
                                         Color(android.graphics.Color.parseColor(event.color))
                                     } catch (e: Exception) {
-                                        Color(0xFF3788D8)  // fallback nếu color sai format
+                                        Color(0xFF3788D8)
                                     }
 
                                     Text(
@@ -142,9 +139,8 @@ fun ScheduleScreen(
             }
         }
 
-        // Floating Action Button
         FloatingActionButton(
-            onClick = { /* Show bottom sheet chọn loại */ },
+            onClick = { showAddOptions = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
@@ -152,8 +148,6 @@ fun ScheduleScreen(
             Icon(Icons.Default.Add, contentDescription = "Thêm")
         }
 
-        // BottomSheet chọn loại thêm
-        var showAddOptions by remember { mutableStateOf(false) }
         if (showAddOptions) {
             ModalBottomSheet(onDismissRequest = { showAddOptions = false }) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -162,18 +156,20 @@ fun ScheduleScreen(
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
+
                     TextButton(
                         onClick = {
-                            onNavigateToChooseClass()
+                            navController.navigate("choose_class")
                             showAddOptions = false
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Thêm lớp học")
                     }
+
                     TextButton(
                         onClick = {
-                            onNavigateToAddEvent()
+                            navController.navigate("add_personal_event")
                             showAddOptions = false
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -184,7 +180,7 @@ fun ScheduleScreen(
             }
         }
 
-        // Popup chi tiết sự kiện
+        // Dialog chi tiết sự kiện (giữ nguyên)
         selectedEvent?.let { event ->
             AlertDialog(
                 onDismissRequest = { viewModel.clearSelectedEvent() },
@@ -194,16 +190,12 @@ fun ScheduleScreen(
                         Text("Tiêu đề: ${event.title}")
                         if (event.teacher != null) Text("Giảng viên: ${event.teacher}")
                         Text("Địa điểm: ${event.location ?: "Không có"}")
-                        Text(
-                            "Thời gian: ${event.startTime ?: "--"} - ${event.endTime ?: "--"}"
-                        )
+                        Text("Thời gian: ${event.startTime ?: "--"} - ${event.endTime ?: "--"}")
                         Text("Ngày: ${event.date}")
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { viewModel.clearSelectedEvent() }) {
-                        Text("Đóng")
-                    }
+                    TextButton(onClick = { viewModel.clearSelectedEvent() }) { Text("Đóng") }
                 },
                 dismissButton = {
                     TextButton(onClick = {

@@ -1,4 +1,3 @@
-// ChooseClassScreen.kt (sửa)
 package com.example.matestudy.ui.screen
 
 import androidx.compose.foundation.clickable
@@ -9,23 +8,23 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.matestudy.ui.viewmodel.ScheduleViewModel
 import androidx.compose.ui.Alignment
+import com.example.matestudy.ui.viewmodel.ScheduleViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun ChooseClassScreen(
     viewModel: ScheduleViewModel,
-    onBack: () -> Unit,
-    onSelect: (Long) -> Unit
+    onBack: () -> Unit
 ) {
-    // TODO: Lấy hoc_ky_id hiện tại động (từ ViewModel hoặc SharedPreferences)
-    // Hiện tại hardcode 1 để test, sau thay bằng logic thật
-    val hocKyId = 1L // Thay bằng giá trị động
+    // TODO: Lấy hocKyId động (từ ViewModel, SharedPreferences, hoặc state)
+    val hocKyId = 1L // tạm hardcode để test, sau thay bằng giá trị thật
 
-    // Lấy danh sách môn học từ repository qua flow
     val monHocList by viewModel.scheduleRepository
         .getMonHocByHocKy(hocKyId)
         .collectAsState(initial = emptyList())
+
+    val coroutineScope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(
@@ -35,7 +34,10 @@ fun ChooseClassScreen(
         )
 
         if (monHocList.isEmpty()) {
-            Text("Không có lớp học nào trong học kỳ này", modifier = Modifier.align(Alignment.CenterHorizontally))
+            Text(
+                "Không có lớp học nào trong học kỳ này",
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
         } else {
             LazyColumn {
                 items(monHocList) { mon ->
@@ -43,7 +45,12 @@ fun ChooseClassScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
-                            .clickable { onSelect(mon.id) },
+                            .clickable {
+                                coroutineScope.launch {
+                                    viewModel.addClass(mon.id)  // Gọi suspend function ở đây
+                                }
+                                onBack()  // Quay lại màn lịch sau khi thêm
+                            },
                         elevation = CardDefaults.cardElevation(2.dp)
                     ) {
                         Row(
