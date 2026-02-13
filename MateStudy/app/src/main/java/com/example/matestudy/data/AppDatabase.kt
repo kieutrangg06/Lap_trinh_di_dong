@@ -1,16 +1,17 @@
 package com.example.matestudy.data
 
+import android.content.Context
 import androidx.room.Database
+import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.matestudy.data.dao.*
 import com.example.matestudy.data.entity.*
-import android.content.Context
-import androidx.room.Room
 
 @Database(
     entities = [UserEntity::class, PostEntity::class, CommentEntity::class, LikeEntity::class,
-        HocKyEntity::class, MonHocEntity::class, LichCaNhanEntity::class, SkCaNhanEntity::class],
-    version = 3, // Tăng từ 2 lên 3
+        HocKyEntity::class, MonHocEntity::class, LichCaNhanEntity::class, SkCaNhanEntity::class,
+        ReviewEntity::class], // Thêm ReviewEntity
+    version = 4, // Tăng từ 3 lên 4
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -18,10 +19,11 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun postDao(): PostDao
     abstract fun commentDao(): CommentDao
     abstract fun likeDao(): LikeDao
-    abstract fun hocKyDao(): HocKyDao // Mới
-    abstract fun monHocDao(): MonHocDao // Mới
-    abstract fun lichCaNhanDao(): LichCaNhanDao // Mới
-    abstract fun skCaNhanDao(): SkCaNhanDao // Mới
+    abstract fun hocKyDao(): HocKyDao
+    abstract fun monHocDao(): MonHocDao
+    abstract fun lichCaNhanDao(): LichCaNhanDao
+    abstract fun skCaNhanDao(): SkCaNhanDao
+    abstract fun reviewDao(): ReviewDao // Thêm mới
 
     companion object {
         @Volatile

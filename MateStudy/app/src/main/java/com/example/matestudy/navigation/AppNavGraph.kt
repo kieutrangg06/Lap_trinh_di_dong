@@ -22,6 +22,8 @@ import com.example.matestudy.ui.viewmodel.AuthViewModel
 import com.example.matestudy.ui.viewmodel.ForumViewModel
 import com.example.matestudy.ui.viewmodel.ScheduleViewModel
 import com.example.matestudy.data.repository.ScheduleRepository
+import com.example.matestudy.ui.viewmodel.ReviewViewModel
+import com.example.matestudy.data.repository.ReviewRepository
 
 @Composable
 fun AppNavGraph() {
@@ -233,6 +235,22 @@ private fun MainAppScreen(
                     onBack = { bottomNavController.popBackStack() }
                     // KHÔNG cần truyền onSelect nữa nếu bạn đã xử lý bên trong ChooseClassScreen
                 )
+            }
+
+            composable(BottomNavItem.Rating.route) {
+                val reviewViewModel: ReviewViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            val db = AppDatabase.getDatabase(android.app.Application())
+                            return ReviewViewModel(
+                                ReviewRepository(db),
+                                AuthRepository(db),
+                                ScheduleRepository(db)
+                            ) as T
+                        }
+                    }
+                )
+                RatingScreen(viewModel = reviewViewModel)
             }
         }
     }
