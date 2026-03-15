@@ -1,28 +1,26 @@
 package com.example.matestudy.data.repository
 
-import com.example.matestudy.data.AppDatabase
 import com.example.matestudy.data.entity.UserEntity
+import com.example.matestudy.data.remote.FirestoreDataSource
 import kotlinx.coroutines.flow.Flow
 
-class AuthRepository(private val db: AppDatabase) {
-
-    private val userDao = db.userDao()
+class AuthRepository(private val firestore: FirestoreDataSource) {
 
     suspend fun saveUser(user: UserEntity) {
-        userDao.insertUser(user)
+        firestore.saveUser(user)
     }
 
     suspend fun updateUser(user: UserEntity) {
-        userDao.updateUser(user)
+        firestore.updateUser(user)
     }
 
-    fun getCurrentUserFlow(): Flow<UserEntity?> = userDao.getCurrentUserFlow()
+    fun getCurrentUserFlow(): Flow<UserEntity?> = firestore.getCurrentUserFlow()
 
     suspend fun findUserByUsernameOrEmail(identifier: String): UserEntity? {
-        return userDao.findByUsername(identifier) ?: userDao.findByEmail(identifier)
+        return firestore.findByUsername(identifier) ?: firestore.findByEmail(identifier)
     }
 
     suspend fun clearUserData() {
-        userDao.deleteAll()
+        firestore.deleteAllUsers()
     }
 }

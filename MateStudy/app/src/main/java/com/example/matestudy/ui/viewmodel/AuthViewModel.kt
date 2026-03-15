@@ -5,14 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.matestudy.data.User
 import com.example.matestudy.data.entity.UserEntity
 import com.example.matestudy.data.repository.AuthRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.first
 
 class AuthViewModel(
     private val repository: AuthRepository
@@ -34,11 +28,7 @@ class AuthViewModel(
     init {
         viewModelScope.launch {
             repository.getCurrentUserFlow().collect { entity ->
-                if (entity != null) {
-                    _currentUser.value = entity.toUserDomain()
-                } else {
-                    _currentUser.value = User() // reset khi logout hoặc chưa đăng nhập
-                }
+                _currentUser.value = entity?.toUserDomain() ?: User()
             }
         }
     }
@@ -83,7 +73,7 @@ class AuthViewModel(
     private val _confirmNewPassword = MutableStateFlow("")
     val confirmNewPassword: StateFlow<String> = _confirmNewPassword.asStateFlow()
 
-    // ── Các hàm xử lý onChange ──────────────────────────────────────────────────────
+    // ── Các hàm onChange ────────────────────────────────────────────────────────────
     fun onEmailOrUsernameChange(value: String) {
         _emailOrUsername.value = value
         _error.value = null
@@ -131,7 +121,6 @@ class AuthViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-
             val identifier = _emailOrUsername.value.trim()
             val pass = _password.value
 
@@ -143,8 +132,7 @@ class AuthViewModel(
 
             try {
                 val userEntity = repository.findUserByUsernameOrEmail(identifier)
-                if (userEntity != null && userEntity.matKhau == pass) { // TODO: so sánh hash thực tế
-                    // Room đã lưu → Flow tự động cập nhật isLoggedIn
+                if (userEntity != null && userEntity.matKhau == pass) { // TODO: hash thực tế
                     _currentUser.value = userEntity.toUserDomain()
                     onSuccess()
                 } else {
@@ -186,30 +174,27 @@ class AuthViewModel(
             }
 
             try {
-                // Kiểm tra trùng username / email (tuỳ chọn)
                 if (repository.findUserByUsernameOrEmail(username) != null) {
                     _error.value = "Tên đăng nhập đã tồn tại"
-                    _isLoading.value = false
                     return@launch
                 }
                 if (repository.findUserByUsernameOrEmail(email) != null) {
                     _error.value = "Email đã được sử dụng"
-                    _isLoading.value = false
                     return@launch
                 }
 
-                val newUserEntity = UserEntity(
+                val newUser = UserEntity(
+                    id = System.currentTimeMillis(), // tạm dùng timestamp làm ID
                     tenDangNhap = username,
                     email = email,
-                    matKhau = pass, // TODO: hash password trước khi lưu
+                    matKhau = pass, // TODO: hash password
                     nienKhoa = nienKhoaStr.toIntOrNull(),
                     vaiTro = "sinh_vien",
                     trangThai = "hoat_dong",
                     anhDaiDien = null
                 )
 
-                repository.saveUser(newUserEntity)
-                // Flow sẽ tự cập nhật → isLoggedIn = true
+                repository.saveUser(newUser)
                 onSuccess()
             } catch (e: Exception) {
                 _error.value = "Đăng ký thất bại: ${e.message}"
@@ -241,23 +226,18 @@ class AuthViewModel(
             }
 
             try {
-                val currentEntity = repository.getCurrentUserFlow().first()
-                if (currentEntity == null) {
+                val current = repository.getCurrentUserFlow().first() ?: run {
                     _error.value = "Không tìm thấy thông tin người dùng"
                     return@launch
                 }
 
-                if (currentEntity.matKhau != oldPass) { // TODO: so sánh hash
+                if (current.matKhau != oldPass) {
                     _error.value = "Mật khẩu cũ không đúng"
                     return@launch
                 }
 
-                val updatedUser = currentEntity.copy(
-                    matKhau = newPass // TODO: hash trước khi lưu
-                )
-
-                repository.updateUser(updatedUser)
-                _error.value = null
+                val updated = current.copy(matKhau = newPass) // TODO: hash
+                repository.updateUser(updated)
                 onSuccess()
             } catch (e: Exception) {
                 _error.value = "Đổi mật khẩu thất bại: ${e.message}"
@@ -271,7 +251,6 @@ class AuthViewModel(
     fun logout() {
         viewModelScope.launch {
             repository.clearUserData()
-            // Flow tự reset → isLoggedIn = false
             clearAllFields()
         }
     }
@@ -290,92 +269,55 @@ class AuthViewModel(
         _error.value = null
     }
 
-    // Reset error khi người dùng tương tác lại (tuỳ chọn gọi từ UI)
-    fun clearError() {
-        _error.value = null
-    }
-
-    // ui/viewmodel/AuthViewModel.kt
     fun updateProfile(
         newUsername: String,
         newEmail: String,
         newNienKhoa: Int?,
-        newAvatarUri: String? // tạm là uri, sau này xử lý file thật
+        newAvatarUri: String?
     ) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
 
             try {
-                val currentEntity = repository.getCurrentUserFlow().first() ?: run {
+                val current = repository.getCurrentUserFlow().first() ?: run {
                     _error.value = "Không tìm thấy thông tin người dùng"
                     return@launch
                 }
 
                 // Validate cơ bản
-                if (newUsername.isBlank() || newUsername.length < 4) {
+                if (newUsername.length < 4) {
                     _error.value = "Tên đăng nhập phải từ 4 ký tự trở lên"
                     return@launch
                 }
-                if (newEmail.isBlank() || !newEmail.contains("@") || !newEmail.contains(".")) {
+                if (!newEmail.contains("@") || !newEmail.contains(".")) {
                     _error.value = "Email không hợp lệ"
                     return@launch
                 }
-                if (newNienKhoa != null && (newNienKhoa < 1900 || newNienKhoa > 2100)) {
-                    _error.value = "Niên khóa không hợp lệ"
-                    return@launch
-                }
 
-                // Trong updateProfile, thay phần kiểm tra trùng bằng cách này:
-                val existingByUsername = repository.findUserByUsernameOrEmail(newUsername)
-                if (existingByUsername != null && existingByUsername.id != currentEntity.id) {
-                    if (existingByUsername.tenDangNhap == newUsername) {
-                        _error.value = "Tên đăng nhập đã được sử dụng"
-                        return@launch
-                    }
-                }
-
-                val existingByEmail = repository.findUserByUsernameOrEmail(newEmail)
-                if (existingByEmail != null && existingByEmail.id != currentEntity.id) {
-                    if (existingByEmail.email == newEmail) {
-                        _error.value = "Email đã được sử dụng"
-                        return@launch
-                    }
-                }
-
-                // Xử lý ảnh (demo đơn giản)
-                val finalAvatar = when {
-                    newAvatarUri == null -> currentEntity.anhDaiDien
-                    else -> newAvatarUri // sau này nên copy file và lưu path
-                }
-
-                // Cập nhật entity
-                val updatedEntity = currentEntity.copy(
+                val updated = current.copy(
                     tenDangNhap = newUsername.trim(),
                     email = newEmail.trim(),
                     nienKhoa = newNienKhoa,
-                    anhDaiDien = finalAvatar
+                    anhDaiDien = newAvatarUri ?: current.anhDaiDien
                 )
 
-                repository.updateUser(updatedEntity)
-                // Flow sẽ tự cập nhật currentUser → UI refresh
-
+                repository.updateUser(updated)
             } catch (e: Exception) {
-                _error.value = "Cập nhật thất bại: ${e.localizedMessage ?: "Lỗi không xác định"}"
+                _error.value = "Cập nhật thất bại: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    // ── Extension mapping Entity → Domain model ─────────────────────────────────────
     private fun UserEntity.toUserDomain(): User = User(
-        id = this.id,
-        tenDangNhap = this.tenDangNhap,
-        email = this.email,
-        nienKhoa = this.nienKhoa,
-        vaiTro = this.vaiTro,
-        trangThai = this.trangThai,
-        anhDaiDien = this.anhDaiDien
+        id = id,
+        tenDangNhap = tenDangNhap,
+        email = email,
+        nienKhoa = nienKhoa,
+        vaiTro = vaiTro,
+        trangThai = trangThai,
+        anhDaiDien = anhDaiDien
     )
 }

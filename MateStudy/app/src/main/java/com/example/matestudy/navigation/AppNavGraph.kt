@@ -1,6 +1,5 @@
 package com.example.matestudy.navigation
 
-import ProfileScreen
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,25 +13,28 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.matestudy.data.AppDatabase
+import com.example.matestudy.data.remote.FirestoreDataSource
 import com.example.matestudy.data.repository.AuthRepository
 import com.example.matestudy.data.repository.ForumRepository
+import com.example.matestudy.data.repository.ReviewRepository
+import com.example.matestudy.data.repository.ScheduleRepository
 import com.example.matestudy.ui.screen.*
 import com.example.matestudy.ui.viewmodel.AuthViewModel
 import com.example.matestudy.ui.viewmodel.ForumViewModel
 import com.example.matestudy.ui.viewmodel.ScheduleViewModel
-import com.example.matestudy.data.repository.ScheduleRepository
 import com.example.matestudy.ui.viewmodel.ReviewViewModel
-import com.example.matestudy.data.repository.ReviewRepository
+import ProfileScreen
 
 @Composable
-fun AppNavGraph() {
+fun AppNavGraph(authViewModel: AuthViewModel) {
     val rootNavController = rememberNavController()
+
+    val firestoreDataSource = remember { FirestoreDataSource() }
+
     val authViewModel: AuthViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val db = AppDatabase.getDatabase(android.app.Application())
-                return AuthViewModel(AuthRepository(db)) as T
+                return AuthViewModel(AuthRepository(firestoreDataSource)) as T
             }
         }
     )
@@ -64,9 +66,7 @@ private fun AuthNavGraph(
         composable("login") {
             LoginScreen(
                 onLoginSuccess = {
-                    navController.navigate("main") {
-                        popUpTo(0) { inclusive = true }
-                    }
+                    navController.navigate("main") { popUpTo(0) { inclusive = true } }
                 },
                 onRegisterClick = { navController.navigate("register") },
                 viewModel = authViewModel
@@ -105,13 +105,14 @@ private fun MainAppScreen(
 ) {
     val bottomNavController = rememberNavController()
 
+    val firestoreDataSource = remember { FirestoreDataSource() }
+
     val forumViewModel: ForumViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val db = AppDatabase.getDatabase(android.app.Application())
                 return ForumViewModel(
-                    forumRepository = ForumRepository(db),
-                    authRepository = AuthRepository(db)
+                    forumRepository = ForumRepository(firestoreDataSource),
+                    authRepository = AuthRepository(firestoreDataSource)
                 ) as T
             }
         }
@@ -182,10 +183,9 @@ private fun MainAppScreen(
                 val scheduleViewModel: ScheduleViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            val db = AppDatabase.getDatabase(android.app.Application())
                             return ScheduleViewModel(
-                                scheduleRepository = ScheduleRepository(db),
-                                authRepository = AuthRepository(db)
+                                scheduleRepository = ScheduleRepository(firestoreDataSource),
+                                authRepository = AuthRepository(firestoreDataSource)
                             ) as T
                         }
                     }
@@ -201,10 +201,9 @@ private fun MainAppScreen(
                 val scheduleViewModel: ScheduleViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            val db = AppDatabase.getDatabase(android.app.Application())
                             return ScheduleViewModel(
-                                ScheduleRepository(db),
-                                AuthRepository(db)
+                                ScheduleRepository(firestoreDataSource),
+                                AuthRepository(firestoreDataSource)
                             ) as T
                         }
                     }
@@ -221,10 +220,9 @@ private fun MainAppScreen(
                 val scheduleViewModel: ScheduleViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            val db = AppDatabase.getDatabase(android.app.Application())
                             return ScheduleViewModel(
-                                ScheduleRepository(db),
-                                AuthRepository(db)
+                                ScheduleRepository(firestoreDataSource),
+                                AuthRepository(firestoreDataSource)
                             ) as T
                         }
                     }
@@ -233,7 +231,6 @@ private fun MainAppScreen(
                 ChooseClassScreen(
                     viewModel = scheduleViewModel,
                     onBack = { bottomNavController.popBackStack() }
-                    // KHÔNG cần truyền onSelect nữa nếu bạn đã xử lý bên trong ChooseClassScreen
                 )
             }
 
@@ -241,11 +238,10 @@ private fun MainAppScreen(
                 val reviewViewModel: ReviewViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            val db = AppDatabase.getDatabase(android.app.Application())
                             return ReviewViewModel(
-                                ReviewRepository(db),
-                                AuthRepository(db),
-                                ScheduleRepository(db)
+                                ReviewRepository(firestoreDataSource),
+                                AuthRepository(firestoreDataSource),
+                                ScheduleRepository(firestoreDataSource)
                             ) as T
                         }
                     }

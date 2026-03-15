@@ -1,22 +1,21 @@
 package com.example.matestudy.data.repository
 
-import com.example.matestudy.data.AppDatabase
 import com.example.matestudy.data.entity.ReviewEntity
+import com.example.matestudy.data.remote.FirestoreDataSource
 import kotlinx.coroutines.flow.Flow
 
-class ReviewRepository(private val db: AppDatabase) {
-    private val reviewDao = db.reviewDao()
+class ReviewRepository(private val firestore: FirestoreDataSource) {
 
     suspend fun insertReview(review: ReviewEntity) {
-        reviewDao.insertReview(review)
+        firestore.insertReview(review)
     }
 
     fun getReviewsByMonHoc(monHocId: Long): Flow<List<ReviewEntity>> =
-        reviewDao.getReviewsByMonHoc(monHocId)
+        firestore.getReviewsByMonHoc(monHocId)
 
     fun getAverageRating(monHocId: Long): Flow<Double?> =
-        reviewDao.getAverageRating(monHocId)
+        firestore.getAverageRating(monHocId)
 
     fun getReviewCount(monHocId: Long): Flow<Int> =
-        reviewDao.getReviewCount(monHocId)
+        firestore.getReviewCount(monHocId)
 }

@@ -7,11 +7,14 @@ import androidx.room.PrimaryKey
 data class UserEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val tenDangNhap: String,
-    val email: String,
-    val matKhau: String, // Lưu ý: Trong thực tế KHÔNG nên lưu mật khẩu plain text!
-    val nienKhoa: Int?, // year(4) → Int?
-    val vaiTro: String, // "sinh_vien" hoặc "admin"
-    val trangThai: String, // "hoat_dong", "bi_khoa", "da_xoa"
-    val anhDaiDien: String? // url hoặc path
+
+    val tenDangNhap: String = "",           // default empty string
+    val email: String = "",                 // default empty
+    val matKhau: String = "",               // default empty (dù không nên lưu plain text)
+
+    val nienKhoa: Int? = null,              // nullable → default null
+    val vaiTro: String = "sinh_vien",       // default là sinh_vien (phổ biến nhất)
+    val trangThai: String = "hoat_dong",    // default hoạt động
+
+    val anhDaiDien: String? = null          // nullable → default null
 )

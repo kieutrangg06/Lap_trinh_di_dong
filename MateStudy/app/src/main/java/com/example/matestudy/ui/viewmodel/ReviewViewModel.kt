@@ -7,11 +7,7 @@ import com.example.matestudy.data.entity.ReviewEntity
 import com.example.matestudy.data.repository.AuthRepository
 import com.example.matestudy.data.repository.ReviewRepository
 import com.example.matestudy.data.repository.ScheduleRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class ReviewViewModel(
@@ -20,7 +16,6 @@ class ReviewViewModel(
     private val scheduleRepository: ScheduleRepository
 ) : ViewModel() {
 
-    // State cho form thêm đánh giá
     private val _selectedMonHoc = MutableStateFlow<MonHocEntity?>(null)
     val selectedMonHoc: StateFlow<MonHocEntity?> = _selectedMonHoc.asStateFlow()
 
@@ -33,8 +28,9 @@ class ReviewViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // Danh sách môn học (từ học kỳ hiện tại, hardcode hocKyId = 1L)
-    val monHocList: Flow<List<MonHocEntity>> = scheduleRepository.getMonHocByHocKy(1L) // Thay bằng hocKyId động nếu cần
+    // Danh sách môn học (hardcode hocKyId = 1L, sau này lấy động)
+    val monHocList: StateFlow<List<MonHocEntity>> = scheduleRepository.getMonHocByHocKy(1L)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setSelectedMonHoc(monHoc: MonHocEntity?) {
         _selectedMonHoc.value = monHoc
@@ -54,16 +50,26 @@ class ReviewViewModel(
                 _error.value = "Bạn cần đăng nhập để đánh giá"
                 return@launch
             }
-            if (_selectedMonHoc.value == null || _rating.value == 0 || _content.value.isBlank()) {
-                _error.value = "Vui lòng chọn đầy đủ thông tin"
+
+            val monHoc = _selectedMonHoc.value ?: run {
+                _error.value = "Vui lòng chọn môn học"
                 return@launch
             }
+
+            if (_rating.value == 0 || _content.value.isBlank()) {
+                _error.value = "Vui lòng đánh giá sao và nhập nội dung"
+                return@launch
+            }
+
             val review = ReviewEntity(
-                mon_hoc_id = _selectedMonHoc.value!!.id,
+                mon_hoc_id = monHoc.id,
                 sinh_vien_id = sinhVienId,
                 diem_sao = _rating.value,
-                noi_dung = _content.value
+                noi_dung = _content.value.trim(),
+                trang_thai = "cho_duyet",
+                ngay_dang = System.currentTimeMillis()
             )
+
             try {
                 reviewRepository.insertReview(review)
                 resetForm()
@@ -81,7 +87,6 @@ class ReviewViewModel(
         _error.value = null
     }
 
-    // Các hàm lấy dữ liệu hiển thị
     fun getReviewsByMonHoc(monHocId: Long): Flow<List<ReviewEntity>> =
         reviewRepository.getReviewsByMonHoc(monHocId)
 

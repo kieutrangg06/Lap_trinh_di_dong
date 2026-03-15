@@ -11,12 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.matestudy.ui.viewmodel.ReviewViewModel
-import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.style.TextAlign
+import java.text.SimpleDateFormat
+import java.util.*
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 fun RatingScreen(viewModel: ReviewViewModel) {
     val monHocList by viewModel.monHocList.collectAsState(initial = emptyList())
     val showAddDialog = remember { mutableStateOf(false) }
-    val selectedMonHocId = remember { mutableStateOf<Long?>(null) } // Để xem chi tiết đánh giá
+    val selectedMonHocId = remember { mutableStateOf<Long?>(null) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Đánh giá môn học và giảng viên", style = MaterialTheme.typography.titleLarge)
@@ -35,7 +35,7 @@ fun RatingScreen(viewModel: ReviewViewModel) {
             Text("Thêm đánh giá mới")
         }
 
-        // Bảng đánh giá trung bình (theo mẫu hình 3)
+        // Danh sách môn học
         Text("Danh sách môn học", modifier = Modifier.padding(top = 16.dp))
         LazyColumn {
             items(monHocList) { monHoc ->
@@ -49,10 +49,19 @@ fun RatingScreen(viewModel: ReviewViewModel) {
                         .clickable { selectedMonHocId.value = monHoc.id },
                     elevation = CardDefaults.cardElevation(2.dp)
                 ) {
-                    Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(monHoc.ten_mon ?: "Không tên", style = MaterialTheme.typography.titleMedium)
-                            Text("GV: ${monHoc.ten_gv ?: "Không có"}", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = monHoc.tenMon ?: "Không tên",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = "GV: ${monHoc.tenGv ?: "Không có"}",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                         Column(horizontalAlignment = Alignment.End) {
                             Row {
@@ -66,25 +75,33 @@ fun RatingScreen(viewModel: ReviewViewModel) {
             }
         }
 
-        // Nếu chọn môn, hiển thị danh sách đánh giá chi tiết (theo mẫu hình 2)
+        // Nếu chọn môn → hiển thị danh sách đánh giá chi tiết
         selectedMonHocId.value?.let { monId ->
             val reviews by viewModel.getReviewsByMonHoc(monId).collectAsState(initial = emptyList())
             Spacer(modifier = Modifier.height(16.dp))
             Text("Danh sách đánh giá", style = MaterialTheme.typography.titleMedium)
+
             if (reviews.isEmpty()) {
-                Text("Chưa có đánh giá", modifier = Modifier.align(Alignment.CenterHorizontally))
+                Text(
+                    "Chưa có đánh giá",
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
             } else {
                 LazyColumn {
                     items(reviews) { review ->
                         Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text("Sinh viên ID: ${review.sinh_vien_id}") // Ẩn tên thật nếu cần
+                                Text("Sinh viên ID: ${review.sinh_vien_id}") // sửa: sinh_vien_id
                                 Row {
-                                    repeat(review.diem_sao ?: 0) { Icon(Icons.Default.Star, contentDescription = null) }
+                                    repeat(review.diem_sao ?: 0) { // sửa: diem_sao
+                                        Icon(Icons.Default.Star, contentDescription = null)
+                                    }
                                 }
-                                Text(review.noi_dung)
-                                Text("Ngày: ${java.text.SimpleDateFormat("dd/MM/yyyy").format(review.ngay_dang)}",
-                                    style = MaterialTheme.typography.bodySmall)
+                                Text(review.noi_dung) // sửa: noi_dung
+                                Text(
+                                    text = "Ngày: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(review.ngay_dang)}", // sửa: ngay_dang
+                                    style = MaterialTheme.typography.bodySmall
+                                )
                             }
                         }
                     }
@@ -93,7 +110,7 @@ fun RatingScreen(viewModel: ReviewViewModel) {
         }
     }
 
-    // Dialog thêm đánh giá (theo mẫu hình 1)
+    // Dialog thêm đánh giá mới
     if (showAddDialog.value) {
         AlertDialog(
             onDismissRequest = { showAddDialog.value = false },
@@ -102,20 +119,26 @@ fun RatingScreen(viewModel: ReviewViewModel) {
                 Column {
                     // Chọn môn học
                     var expanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = !expanded }
+                    ) {
                         TextField(
                             readOnly = true,
-                            value = viewModel.selectedMonHoc.value?.ten_mon ?: "Chọn môn học",
+                            value = viewModel.selectedMonHoc.value?.tenMon ?: "Chọn môn học",
                             onValueChange = {},
                             label = { Text("Môn học") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                             colors = ExposedDropdownMenuDefaults.textFieldColors(),
                             modifier = Modifier.menuAnchor()
                         )
-                        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
                             monHocList.forEach { monHoc ->
                                 DropdownMenuItem(
-                                    text = { Text(monHoc.ten_mon ?: "") },
+                                    text = { Text(monHoc.tenMon ?: "") },
                                     onClick = {
                                         viewModel.setSelectedMonHoc(monHoc)
                                         expanded = false

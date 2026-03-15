@@ -4,22 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.matestudy.data.Post
 import com.example.matestudy.data.Comment
-import com.example.matestudy.data.entity.PostEntity
 import com.example.matestudy.data.entity.CommentEntity
-import com.example.matestudy.data.repository.ForumRepository
+import com.example.matestudy.data.entity.PostEntity
 import com.example.matestudy.data.repository.AuthRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.firstOrNull
+import com.example.matestudy.data.repository.ForumRepository
 import com.example.matestudy.data.toPost
+import com.example.matestudy.data.toComment
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
 class ForumViewModel(
     private val forumRepository: ForumRepository,
@@ -42,20 +34,23 @@ class ForumViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Trạng thái cho tìm kiếm (filter local)
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     val filteredPosts: StateFlow<List<Post>> = combine(posts, _searchQuery) { list, query ->
-        if (query.isBlank()) list else list.filter { it.tieuDe.contains(query, ignoreCase = true) || it.noiDung.contains(query, ignoreCase = true) }
+        if (query.isBlank()) list
+        else list.filter {
+            it.tieuDe.contains(query, ignoreCase = true) ||
+                    it.noiDung.contains(query, ignoreCase = true)
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Cho màn chi tiết post
     private val _selectedPost = MutableStateFlow<Post?>(null)
     val selectedPost: StateFlow<Post?> = _selectedPost.asStateFlow()
 
     val comments: StateFlow<List<Comment>> = _selectedPost.flatMapLatest { post ->
-        if (post != null) forumRepository.getCommentsForPost(post.id) else flowOf(emptyList())
+        if (post != null) forumRepository.getCommentsForPost(post.id)
+        else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _error = MutableStateFlow<String?>(null)
@@ -74,7 +69,7 @@ class ForumViewModel(
             val postEntity = forumRepository.getPostById(postId)
             if (postEntity != null) {
                 val likeCount = forumRepository.getLikeCount(postId).firstOrNull() ?: 0
-                val isLiked = forumRepository.toggleLike(postId, currentUserId.value)  // Không, chỉ load
+                val isLiked = forumRepository.toggleLike(postId, currentUserId.value) // chỉ load, không toggle
                 _selectedPost.value = postEntity.toPost(likeCount, isLiked)
             } else {
                 _error.value = "Không tìm thấy bài viết"
@@ -84,14 +79,11 @@ class ForumViewModel(
 
     fun createPost(tieuDe: String, noiDung: String, category: String, filePath: String?) {
         viewModelScope.launch {
-            val user = authRepository.getCurrentUserFlow().firstOrNull()   // ← quan trọng
-            val userId = user?.id ?: 0L
-
+            val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: 0L
             if (userId == 0L) {
                 _error.value = "Vui lòng đăng nhập để đăng bài"
                 return@launch
             }
-
             if (tieuDe.isBlank() || noiDung.isBlank()) {
                 _error.value = "Tiêu đề và nội dung không được để trống"
                 return@launch
@@ -99,15 +91,16 @@ class ForumViewModel(
 
             val newPost = PostEntity(
                 tac_gia_id = userId,
-                tieu_de = tieuDe,
-                noi_dung = noiDung,
+                tieu_de = tieuDe.trim(),
+                noi_dung = noiDung.trim(),
                 file_dinh_kem = filePath,
                 category = category,
-                trang_thai = "da_duyet"  // demo
+                trang_thai = "da_duyet",
+                ngay_dang = System.currentTimeMillis()
             )
+
             forumRepository.createPost(newPost)
             _error.value = null
-            // Có thể thêm thông báo thành công nếu muốn
         }
     }
 
@@ -118,11 +111,14 @@ class ForumViewModel(
                 _error.value = "Vui lòng đăng nhập để bình luận"
                 return@launch
             }
+
             val newComment = CommentEntity(
                 bai_viet_id = postId,
                 tac_gia_id = userId,
-                noi_dung = noiDung
+                noi_dung = noiDung.trim(),
+                ngay_tao = System.currentTimeMillis()
             )
+
             forumRepository.addComment(newComment)
         }
     }

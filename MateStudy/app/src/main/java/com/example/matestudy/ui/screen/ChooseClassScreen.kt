@@ -61,21 +61,21 @@ fun ChooseClassScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = mon.ten_mon,
+                                    text = mon.tenMon,                    // sửa: tenMon
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
-                                    text = "GV: ${mon.ten_gv}",
+                                    text = "GV: ${mon.tenGv}",            // sửa: tenGv
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
-                                    text = "${mon.gio_bat_dau ?: "--"} - ${mon.gio_ket_thuc ?: "--"}",
+                                    text = "${mon.gioBatDau ?: "--"} - ${mon.gioKetThuc ?: "--"}",  // sửa: gioBatDau, gioKetThuc
                                     style = MaterialTheme.typography.bodySmall
                                 )
                                 Text(
-                                    text = mon.dia_diem ?: "Chưa có địa điểm",
+                                    text = mon.diaDiem ?: "Chưa có địa điểm",  // sửa: diaDiem
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }

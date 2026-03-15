@@ -3,46 +3,50 @@ package com.example.matestudy.data.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+// hoc_ky
 @Entity(tableName = "hoc_ky")
 data class HocKyEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val ten_hoc_ky: String
+    val ten_hoc_ky: String = ""             // default empty
 )
 
-@Entity(tableName = "mon_hoc")
-data class MonHocEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val ten_mon: String,
-    val ten_gv: String,
-    val dia_diem: String?,
-    val thu: String?, // "2", "3", ..., "CN"
-    val gio_bat_dau: String?, // "HH:mm"
-    val gio_ket_thuc: String?, // "HH:mm"
-    val ngay_bat_dau: String, // "yyyy-MM-dd"
-    val ngay_ket_thuc: String, // "yyyy-MM-dd"
-    val hoc_ky_id: Long?
-)
-
+// lich_ca_nhan
 @Entity(tableName = "lich_ca_nhan")
 data class LichCaNhanEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val sinh_vien_id: Long,
-    val loai: String, // "lop_chinh_thuc" or "su_kien_rieng"
-    val mon_hoc_id: Long?,
-    val sk_id: Long?,
-    val mau_sac: String = "#3788d8"
+    val sinhVienId: Long = 0,
+    val loai: String = "",
+    val monHocId: Long? = null,
+    val skId: Long? = null,
+    val mauSac: String = "#3788d8"
 )
 
+// mon_hoc
+@Entity(tableName = "mon_hoc")
+data class MonHocEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val tenMon: String = "",
+    val tenGv: String = "",
+    val diaDiem: String? = null,
+    val thu: String? = null,
+    val gioBatDau: String? = null,
+    val gioKetThuc: String? = null,
+    val ngayBatDau: String = "",
+    val ngayKetThuc: String = "",
+    val hocKyId: Long? = null
+)
+
+// sk_ca_nhan
 @Entity(tableName = "sk_ca_nhan")
 data class SkCaNhanEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val sinh_vien_id: Long,
-    val tieu_de: String,
-    val dia_diem: String?,
-    val thu: String?, // "2", "3", ..., "CN" nếu lặp tuần
-    val lap_lai: String = "khong", // "khong", "hang_ngay", "hang_tuan"
-    val gio_bat_dau: String?, // "HH:mm"
-    val gio_ket_thuc: String?, // "HH:mm"
-    val ngay_bat_dau: String, // "yyyy-MM-dd"
-    val ngay_ket_thuc: String // "yyyy-MM-dd"
+    val sinhVienId: Long = 0,
+    val tieuDe: String = "",
+    val diaDiem: String? = null,
+    val thu: String? = null,
+    val lapLai: String = "khong",
+    val gioBatDau: String? = null,
+    val gioKetThuc: String? = null,
+    val ngayBatDau: String = "",
+    val ngayKetThuc: String = ""
 )

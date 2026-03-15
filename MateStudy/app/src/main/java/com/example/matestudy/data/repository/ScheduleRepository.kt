@@ -1,34 +1,58 @@
 package com.example.matestudy.data.repository
 
-import com.example.matestudy.data.AppDatabase
 import com.example.matestudy.data.entity.*
+import com.example.matestudy.data.remote.FirestoreDataSource
 import kotlinx.coroutines.flow.Flow
 
-class ScheduleRepository(private val db: AppDatabase) {
-    private val hocKyDao = db.hocKyDao()
-    private val monHocDao = db.monHocDao()
-    private val lichCaNhanDao = db.lichCaNhanDao()
-    private val skCaNhanDao = db.skCaNhanDao()
+class ScheduleRepository(private val firestore: FirestoreDataSource) {
 
     // HocKy
-    fun getAllHocKy(): Flow<List<HocKyEntity>> = hocKyDao.getAllHocKy()
-    suspend fun insertHocKy(hocKy: HocKyEntity) = hocKyDao.insertHocKy(hocKy)
+    fun getAllHocKy(): Flow<List<HocKyEntity>> = firestore.getAllHocKy()
+
+    suspend fun insertHocKy(hocKy: HocKyEntity) {
+        firestore.insertHocKy(hocKy)
+    }
 
     // MonHoc
-    fun getMonHocByHocKy(hocKyId: Long): Flow<List<MonHocEntity>> = monHocDao.getMonHocByHocKy(hocKyId)
-    fun getMonHocById(id: Long): Flow<MonHocEntity?> = monHocDao.getMonHocById(id)
-    suspend fun insertMonHoc(monHoc: MonHocEntity): Long = monHocDao.insertMonHoc(monHoc)
+    fun getMonHocByHocKy(hocKyId: Long): Flow<List<MonHocEntity>> =
+        firestore.getMonHocByHocKy(hocKyId)
+
+    suspend fun insertMonHoc(monHoc: MonHocEntity): Long =
+        firestore.insertMonHoc(monHoc)
+
+    suspend fun getMonHocById(id: Long): MonHocEntity? =
+        firestore.getMonHocById(id)
 
     // LichCaNhan
-    fun getLichCaNhan(sinhVienId: Long): Flow<List<LichCaNhanEntity>> = lichCaNhanDao.getLichBySinhVien(sinhVienId)
-    fun getLichById(id: Long): Flow<LichCaNhanEntity?> = lichCaNhanDao.getLichById(id)
-    suspend fun insertLich(lich: LichCaNhanEntity): Long = lichCaNhanDao.insertLich(lich)
-    suspend fun updateLich(lich: LichCaNhanEntity) = lichCaNhanDao.updateLich(lich)
-    suspend fun deleteLich(lich: LichCaNhanEntity) = lichCaNhanDao.deleteLich(lich)
+    fun getLichCaNhan(sinhVienId: Long): Flow<List<LichCaNhanEntity>> =
+        firestore.getLichBySinhVien(sinhVienId)
+
+    suspend fun getLichById(id: Long): LichCaNhanEntity? =
+        firestore.getLichById(id)
+
+    suspend fun insertLich(lich: LichCaNhanEntity): Long =
+        firestore.insertLich(lich)
+
+    suspend fun updateLich(lich: LichCaNhanEntity) {
+        firestore.updateLich(lich)
+    }
+
+    suspend fun deleteLich(lich: LichCaNhanEntity) {
+        firestore.deleteLich(lich)
+    }
 
     // SkCaNhan
-    fun getSkById(id: Long): Flow<SkCaNhanEntity?> = skCaNhanDao.getSkById(id)
-    suspend fun insertSk(sk: SkCaNhanEntity): Long = skCaNhanDao.insertSk(sk)
-    suspend fun updateSk(sk: SkCaNhanEntity) = skCaNhanDao.updateSk(sk)
-    suspend fun deleteSk(sk: SkCaNhanEntity) = skCaNhanDao.deleteSk(sk)
+    suspend fun insertSk(sk: SkCaNhanEntity): Long =
+        firestore.insertSk(sk)
+
+    suspend fun getSkById(id: Long): SkCaNhanEntity? =
+        firestore.getSkById(id)
+
+    suspend fun updateSk(sk: SkCaNhanEntity) {
+        firestore.updateSk(sk)
+    }
+
+    suspend fun deleteSk(sk: SkCaNhanEntity) {
+        firestore.deleteSk(sk)
+    }
 }
