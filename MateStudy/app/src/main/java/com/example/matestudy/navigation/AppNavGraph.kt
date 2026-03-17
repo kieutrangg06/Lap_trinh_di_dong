@@ -24,6 +24,8 @@ import com.example.matestudy.ui.viewmodel.ForumViewModel
 import com.example.matestudy.ui.viewmodel.ScheduleViewModel
 import com.example.matestudy.ui.viewmodel.ReviewViewModel
 import ProfileScreen
+import com.example.matestudy.ui.viewmodel.ThongBaoViewModel
+import com.example.matestudy.data.repository.ThongBaoRepository
 
 @Composable
 fun AppNavGraph(authViewModel: AuthViewModel) {
@@ -247,6 +249,31 @@ private fun MainAppScreen(
                     }
                 )
                 RatingScreen(viewModel = reviewViewModel)
+            }
+
+            composable(BottomNavItem.Notification.route) {
+                val vm: ThongBaoViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return ThongBaoViewModel(
+                                ThongBaoRepository(firestoreDataSource),
+                                AuthRepository(firestoreDataSource)
+                            ) as T
+                        }
+                    }
+                )
+
+                NotificationScreen(
+                    viewModel = vm,
+                    onNavigateToPost = { postId ->
+                        bottomNavController.navigate("post_detail/$postId")
+                    },
+                    onNavigateToReview = { reviewId ->
+                        // TODO: tạo route chi tiết đánh giá nếu cần
+                        // ví dụ: bottomNavController.navigate("review_detail/$reviewId")
+                    },
+                    onBack = { /* nếu cần */ }
+                )
             }
         }
     }

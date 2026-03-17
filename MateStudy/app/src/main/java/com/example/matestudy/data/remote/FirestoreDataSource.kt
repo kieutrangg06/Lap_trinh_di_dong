@@ -321,4 +321,50 @@ class FirestoreDataSource {
     suspend fun deleteSk(sk: SkCaNhanEntity) {
         db.collection("sk_ca_nhan").document(sk.id.toString()).delete().await()
     }
+
+    // ------------------ THÔNG BÁO ------------------
+
+    suspend fun insertThongBao(thongBao: ThongBaoEntity) {
+        val ref = db.collection("thong_bao").document()
+        val generatedId = ref.id.hashCode().toLong().coerceAtLeast(1L)
+        ref.set(thongBao.copy(id = generatedId)).await()
+    }
+
+    fun getThongBaoCuaToi(sinhVienId: Long): Flow<List<ThongBaoEntity>> = callbackFlow {
+        val listener = db.collection("thong_bao")
+            .whereEqualTo("sinhVienId", sinhVienId)
+            .orderBy("ngayTao", Query.Direction.DESCENDING)
+            .addSnapshotListener { snap, e ->
+                if (e != null) {
+                    close(e)
+                    return@addSnapshotListener
+                }
+                trySend(snap?.toObjects(ThongBaoEntity::class.java) ?: emptyList())
+            }
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun markAsRead(thongBaoId: Long) {
+        db.collection("thong_bao").document(thongBaoId.toString())
+            .update("daDoc", true)
+            .await()
+    }
+
+    suspend fun markAllAsRead(sinhVienId: Long) {
+        val batch = db.batch()
+        db.collection("thong_bao")
+            .whereEqualTo("sinhVienId", sinhVienId)
+            .whereEqualTo("daDoc", false)
+            .get().await().documents.forEach { doc ->
+                batch.update(doc.reference, "daDoc", true)
+            }
+        batch.commit().await()
+    }
+
+    suspend fun getUnreadCount(sinhVienId: Long): Int {
+        return db.collection("thong_bao")
+            .whereEqualTo("sinhVienId", sinhVienId)
+            .whereEqualTo("daDoc", false)
+            .get().await().size()
+    }
 }
