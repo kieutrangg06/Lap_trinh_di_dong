@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Cupcake</string>
+
+    <!-- Start Screen -->
+    <string name="one_cupcake">One Cupcake</string>
+    <string name="six_cupcakes">Six Cupcakes</string>
+    <string name="twelve_cupcakes">Twelve Cupcakes</string>
+
+    <!-- Flavor Screen -->
+    <string name="choose_flavor">Choose Flavor</string>
+    <string name="chocolate">Chocolate</string>
+    <string name="vanilla">Vanilla</string>
+    <string name="red_velvet">Red Velvet</string>
+    <string name="salted_caramel">Salted Caramel</string>
+    <string name="coffee">Coffee</string>
+
+    <!-- Pickup Screen -->
+    <string name="choose_pickup_date">Choose Pickup Date</string>
+
+    <!-- Summary Screen -->
+    <string name="order_summary">Order Summary</string>
+
+    <!-- Common buttons -->
+    <string name="next">Next</string>
+    <string name="cancel">Cancel</string>
+    <string name="back_button">Back</string>
+
+    <!-- Subtotal -->
+    <string name="subtotal_price">Subtotal %s</string>
+
+</resources>
