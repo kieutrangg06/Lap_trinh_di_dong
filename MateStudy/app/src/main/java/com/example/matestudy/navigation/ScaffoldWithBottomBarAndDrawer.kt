@@ -1,38 +1,21 @@
 package com.example.matestudy.navigation
 
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.navigation.NavHostController
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.material3.DrawerValue
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.Text
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.unit.dp
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.NavigationDrawerItem
-import kotlinx.coroutines.launch
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.NavigationBarItem
-import com.example.matestudy.ui.viewmodel.AuthViewModel
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material3.MaterialTheme
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.matestudy.ui.theme.PrimaryPink
+import com.example.matestudy.ui.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,82 +27,78 @@ fun ScaffoldWithBottomBarAndDrawer(
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val currentRoute by bottomNavController.currentBackStackEntryAsState()
+    val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
+            ModalDrawerSheet(
+                drawerContainerColor = MaterialTheme.colorScheme.surface,
+                drawerTonalElevation = 0.dp
+            ) {
+                Spacer(Modifier.height(24.dp))
                 Text(
-                    text = "MATestudy",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.headlineMedium
+                    "MATestudy",
+                    modifier = Modifier.padding(24.dp),
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Black,
+                        color = PrimaryPink
+                    )
                 )
-                HorizontalDivider()
+                HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = Color(0xFFF0F0F0))
+                Spacer(Modifier.height(16.dp))
 
-                NavigationDrawerItem(
-                    label = { Text("Thông tin cá nhân") },
-                    selected = false,
-                    onClick = {
-                        bottomNavController.navigate(BottomNavItem.Profile.route)
-                        scope.launch { drawerState.close() }
-                    },
-                    icon = { Icon(Icons.Default.Person, contentDescription = null) }
-                )
-
-                NavigationDrawerItem(
-                    label = { Text("Đổi mật khẩu") },
-                    selected = false,
-                    onClick = {
-                        bottomNavController.navigate("change_password")
-                        scope.launch { drawerState.close() }
-                    },
-                    icon = { Icon(Icons.Default.Lock, contentDescription = null) }
-                )
-
-                NavigationDrawerItem(
-                    label = { Text("Đăng xuất") },
-                    selected = false,
-                    onClick = {
-                        onLogout()
-                        scope.launch { drawerState.close() }
-                    },
-                    icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) }
-                )
+                DrawerItem(Icons.Default.Person, "Hồ sơ cá nhân", currentRoute == BottomNavItem.Profile.route) {
+                    bottomNavController.navigate(BottomNavItem.Profile.route); scope.launch { drawerState.close() }
+                }
+                DrawerItem(Icons.Default.Lock, "Đổi mật khẩu", currentRoute == "change_password") {
+                    bottomNavController.navigate("change_password"); scope.launch { drawerState.close() }
+                }
+                Spacer(Modifier.weight(1f))
+                DrawerItem(Icons.AutoMirrored.Filled.Logout, "Đăng xuất", false, color = MaterialTheme.colorScheme.error) {
+                    onLogout(); scope.launch { drawerState.close() }
+                }
+                Spacer(Modifier.height(24.dp))
             }
         }
     ) {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("MATestudy") },
+                CenterAlignedTopAppBar(
+                    title = { Text("MATestudy", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)) },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            Icon(Icons.Default.Menu, "Menu")
                         }
-                    }
+                    },
+                    actions = {
+                        IconButton(onClick = { /* Search or Notify */ }) {
+                            Icon(Icons.Default.NotificationsNone, null)
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
                 )
             },
             bottomBar = {
-                NavigationBar {
-                    val items = listOf(
-                        BottomNavItem.Home,
-                        BottomNavItem.Schedule,
-                        BottomNavItem.Rating,
-                        BottomNavItem.Group,
-                        BottomNavItem.Notification,
-                        BottomNavItem.Profile
-                    )
+                NavigationBar(
+                    containerColor = Color.White,
+                    tonalElevation = 8.dp
+                ) {
+                    val items = listOf(BottomNavItem.Home, BottomNavItem.Schedule, BottomNavItem.Rating, BottomNavItem.Notification, BottomNavItem.Profile)
                     items.forEach { item ->
+                        val selected = currentRoute == item.route
                         NavigationBarItem(
                             icon = { Icon(item.icon, contentDescription = item.title) },
-                            label = { Text(item.title) },
-                            selected = currentRoute?.destination?.route == item.route,
+                            label = { Text(item.title, style = MaterialTheme.typography.labelSmall) },
+                            selected = selected,
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = PrimaryPink,
+                                indicatorColor = Color(0xFFFFEBF2)
+                            ),
                             onClick = {
                                 bottomNavController.navigate(item.route) {
-                                    popUpTo(bottomNavController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
+                                    popUpTo(bottomNavController.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
@@ -128,8 +107,22 @@ fun ScaffoldWithBottomBarAndDrawer(
                     }
                 }
             }
-        ) { padding ->
-            content(padding)
-        }
+        ) { padding -> content(padding) }
     }
+}
+
+@Composable
+fun DrawerItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, selected: Boolean, color: Color = Color.Unspecified, onClick: () -> Unit) {
+    NavigationDrawerItem(
+        label = { Text(label, fontWeight = FontWeight.Medium) },
+        selected = selected,
+        onClick = onClick,
+        icon = { Icon(icon, contentDescription = null, tint = if (color != Color.Unspecified) color else if (selected) PrimaryPink else Color.Gray) },
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+        shape = MaterialTheme.shapes.medium,
+        colors = NavigationDrawerItemDefaults.colors(
+            selectedContainerColor = Color(0xFFFFEBF2),
+            selectedTextColor = PrimaryPink
+        )
+    )
 }

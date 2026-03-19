@@ -77,11 +77,33 @@ class FirestoreDataSource {
     }
 
     // POST / FORUM
-    suspend fun insertPost(post: PostEntity): Long {
-        val ref = db.collection("bai_viet_dien_dan").document()
-        val generatedId = ref.id.hashCode().toLong().coerceAtLeast(1L)
-        ref.set(post.copy(id = generatedId)).await()
-        return generatedId
+
+    // FirestoreDataSource.kt
+
+    suspend fun getPostById(id: Long): PostEntity? {
+        // Thêm log để kiểm tra ID truyền vào là bao nhiêu
+        println("DEBUG: Dang tim bai viet voi ID: $id")
+
+        return db.collection("bai_viet_dien_dan")
+            .whereEqualTo("id", id) // Tìm theo field 'id' bên trong document thay vì tìm theo Document Name
+            .limit(1)
+            .get()
+            .await()
+            .documents
+            .firstOrNull()
+            ?.toObject(PostEntity::class.java)
+    }
+
+    // Tương tự cho Comment để đảm bảo load được bình luận
+    fun getCommentsForPost(postId: Long): Flow<List<CommentEntity>> = callbackFlow {
+        val listener = db.collection("binh_luan_dien_dan")
+            .whereEqualTo("bai_viet_id", postId) // Đảm bảo field này trong DB là kiểu Number (Long)
+            .orderBy("ngay_tao", Query.Direction.DESCENDING)
+            .addSnapshotListener { snap, e ->
+                if (e != null) close(e)
+                else trySend(snap?.toObjects(CommentEntity::class.java) ?: emptyList())
+            }
+        awaitClose { listener.remove() }
     }
 
     fun getAllPosts(): Flow<List<PostEntity>> = callbackFlow {
@@ -150,24 +172,7 @@ class FirestoreDataSource {
         awaitClose { listener.remove() }
     }
 
-    suspend fun getPostById(id: Long): PostEntity? {
-        return db.collection("bai_viet_dien_dan").document(id.toString()).get().await()
-            .toObject(PostEntity::class.java)
-    }
 
-    suspend fun insertComment(comment: CommentEntity) {
-        db.collection("binh_luan_dien_dan").add(comment).await()
-    }
-
-    fun getCommentsForPost(postId: Long): Flow<List<CommentEntity>> = callbackFlow {
-        val listener = db.collection("binh_luan_dien_dan")
-            .whereEqualTo("bai_viet_id", postId)
-            .orderBy("ngay_tao", Query.Direction.DESCENDING)
-            .addSnapshotListener { snap, e ->
-                if (e != null) close(e) else trySend(snap?.toObjects(CommentEntity::class.java) ?: emptyList())
-            }
-        awaitClose { listener.remove() }
-    }
 
     suspend fun insertLike(like: LikeEntity) {
         val docId = "${like.bai_viet_id}_${like.sinh_vien_id}"
@@ -179,13 +184,24 @@ class FirestoreDataSource {
         db.collection("luot_thich_bai_viet").document(docId).delete().await()
     }
 
-    fun getLikeCount(postId: Long): Flow<Int> = callbackFlow {
-        val listener = db.collection("luot_thich_bai_viet")
-            .whereEqualTo("bai_viet_id", postId)
-            .addSnapshotListener { snap, e ->
-                if (e != null) close(e) else trySend(snap?.size() ?: 0)
-            }
-        awaitClose { listener.remove() }
+// FirestoreDataSource.kt
+
+    // FirestoreDataSource.kt (Sửa lại hàm insert để tránh trùng ID)
+
+    suspend fun insertPost(post: PostEntity): Long {
+        // Sử dụng NanoTime để giảm tỉ lệ trùng ID xuống mức thấp nhất
+        val generatedId = System.nanoTime()
+        val ref = db.collection("bai_viet_dien_dan").document(generatedId.toString())
+
+        ref.set(post.copy(id = generatedId)).await()
+        return generatedId
+    }
+
+    suspend fun insertComment(comment: CommentEntity) {
+        val generatedId = System.nanoTime()
+        db.collection("binh_luan_dien_dan").document(generatedId.toString())
+            .set(comment.copy(id = generatedId))
+            .await()
     }
 
     suspend fun getLikeByUser(postId: Long, userId: Long): LikeEntity? {
@@ -273,16 +289,9 @@ class FirestoreDataSource {
             .toObject(MonHocEntity::class.java)
     }
 
-    suspend fun insertLich(lich: LichCaNhanEntity): Long {
-        val ref = db.collection("lich_ca_nhan").document()
-        val newId = ref.id.hashCode().toLong().coerceAtLeast(1L)
-        ref.set(lich.copy(id = newId)).await()
-        return newId
-    }
-
     fun getLichBySinhVien(sinhVienId: Long): Flow<List<LichCaNhanEntity>> = callbackFlow {
         val listener = db.collection("lich_ca_nhan")
-            .whereEqualTo("sinh_vien_id", sinhVienId)
+            .whereEqualTo("sinhVienId", sinhVienId)
             .addSnapshotListener { snap, e ->
                 if (e != null) close(e) else trySend(snap?.toObjects(LichCaNhanEntity::class.java) ?: emptyList())
             }
@@ -302,12 +311,23 @@ class FirestoreDataSource {
         db.collection("lich_ca_nhan").document(lich.id.toString()).delete().await()
     }
 
+    // FirestoreDataSource.kt
+
+    suspend fun insertLich(lich: LichCaNhanEntity): Long {
+        val newId = System.currentTimeMillis() // Sử dụng thời gian hiện tại làm ID
+        val ref = db.collection("lich_ca_nhan").document(newId.toString())
+        ref.set(lich.copy(id = newId)).await()
+        return newId
+    }
+
     suspend fun insertSk(sk: SkCaNhanEntity): Long {
-        val ref = db.collection("sk_ca_nhan").document()
-        val newId = ref.id.hashCode().toLong().coerceAtLeast(1L)
+        val newId = System.nanoTime() // NanoTime đảm bảo độ duy nhất cao hơn khi insert nhanh
+        val ref = db.collection("sk_ca_nhan").document(newId.toString())
         ref.set(sk.copy(id = newId)).await()
         return newId
     }
+
+// Lưu ý: Sửa tương tự cho insertMonHoc và các hàm insert khác nếu cần
 
     suspend fun getSkById(id: Long): SkCaNhanEntity? {
         return db.collection("sk_ca_nhan").document(id.toString()).get().await()
@@ -366,5 +386,33 @@ class FirestoreDataSource {
             .whereEqualTo("sinhVienId", sinhVienId)
             .whereEqualTo("daDoc", false)
             .get().await().size()
+    }
+
+    suspend fun isPostLiked(postId: Long, userId: Long): Boolean {
+        return try {
+            val query = db.collection("likes")
+                .whereEqualTo("postId", postId)
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+
+            !query.isEmpty
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // FirestoreDataSource.kt
+    fun getLikeCount(postId: Long): Flow<Int> = callbackFlow {
+        val listener = db.collection("luot_thich_bai_viet")
+            .whereEqualTo("bai_viet_id", postId)
+            .addSnapshotListener { snap, e ->
+                if (e != null) {
+                    /* log error */
+                    return@addSnapshotListener
+                }
+                trySend(snap?.size() ?: 0)
+            }
+        awaitClose { listener.remove() }
     }
 }

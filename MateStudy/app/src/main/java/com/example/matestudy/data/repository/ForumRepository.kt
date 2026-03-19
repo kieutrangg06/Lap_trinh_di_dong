@@ -61,4 +61,10 @@ class ForumRepository(private val firestore: FirestoreDataSource) {
             true // liked
         }
     }
+
+    // ForumRepository.kt
+    suspend fun isPostLiked(postId: Long, userId: Long): Boolean {
+        if (userId == 0L) return false
+        return firestore.getLikeByUser(postId, userId) != null
+    }
 }

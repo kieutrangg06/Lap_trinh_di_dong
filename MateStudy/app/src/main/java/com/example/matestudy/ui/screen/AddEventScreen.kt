@@ -1,151 +1,196 @@
 // AddEventScreen.kt (sửa)
 package com.example.matestudy.ui.screen
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.matestudy.ui.viewmodel.ScheduleViewModel
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import com.example.matestudy.ui.theme.PrimaryPink
+import com.example.matestudy.ui.theme.TextPrimary
+import com.example.matestudy.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
+// AddEventScreen.kt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddEventScreen(
-    viewModel: ScheduleViewModel,
-    onBack: () -> Unit,
-    onSuccess: () -> Unit
-) {
+fun AddEventScreen(viewModel: ScheduleViewModel, onBack: () -> Unit, onSuccess: () -> Unit) {
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
     var tieuDe by remember { mutableStateOf("") }
     var diaDiem by remember { mutableStateOf("") }
-    var lapLai by remember { mutableStateOf("khong") } // sẽ thay bằng DropdownMenu sau
-    var gioBd by remember { mutableStateOf("") }
-    var gioKt by remember { mutableStateOf("") }
-    var ngayBd by remember { mutableStateOf("") }
-    var ngayKt by remember { mutableStateOf("") }
+    var lapLai by remember { mutableStateOf("khong") }
 
-    // TODO: Thay bằng Material3 DatePicker + TimePicker sau
-    // Hiện tại dùng TextField tạm thời
+    // State cho Date và Time
+    var selectedNgayBd by remember { mutableStateOf(LocalDate.now()) }
+    var selectedNgayKt by remember { mutableStateOf(LocalDate.now()) }
+    var selectedGioBd by remember { mutableStateOf(LocalTime.of(8, 0)) }
+    var selectedGioKt by remember { mutableStateOf(LocalTime.of(10, 0)) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        OutlinedTextField(
-            value = tieuDe,
-            onValueChange = { tieuDe = it },
-            label = { Text("Tiêu đề *") },
-            modifier = Modifier.fillMaxWidth()
-        )
+    val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
-        OutlinedTextField(
-            value = diaDiem,
-            onValueChange = { diaDiem = it },
-            label = { Text("Địa điểm") },
-            modifier = Modifier.fillMaxWidth()
-        )
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Thêm sự kiện cá nhân", fontWeight = FontWeight.Bold) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.Close, null) } }
+            )
+        }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)) {
+            Text("Chi tiết sự kiện", style = MaterialTheme.typography.titleMedium, color = PrimaryPink)
 
-        // Dropdown lặp lại (ví dụ đơn giản)
-        var expanded by remember { mutableStateOf(false) }
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
-        ) {
             OutlinedTextField(
-                value = when (lapLai) {
-                    "khong" -> "Không lặp lại"
-                    "hang_ngay" -> "Hàng ngày"
-                    "hang_tuan" -> "Hàng tuần"
-                    else -> "Không lặp lại"
-                },
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Lặp lại") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor()
+                value = tieuDe, onValueChange = { tieuDe = it },
+                label = { Text("Tiêu đề sự kiện") },
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = { Icon(Icons.Default.Edit, null) }
             )
 
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                listOf("khong" to "Không lặp lại", "hang_ngay" to "Hàng ngày", "hang_tuan" to "Hàng tuần").forEach { (value, label) ->
-                    DropdownMenuItem(
-                        text = { Text(label) },
-                        onClick = {
-                            lapLai = value
-                            expanded = false
+            Spacer(Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = diaDiem, onValueChange = { diaDiem = it },
+                label = { Text("Địa điểm (Phòng học, Zoom...)") },
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = { Icon(Icons.Default.LocationOn, null) }
+            )
+
+            Spacer(Modifier.height(24.dp))
+            Text("Thời gian", style = MaterialTheme.typography.titleMedium, color = PrimaryPink)
+
+            // Chọn Ngày
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                DatePickerField("Từ ngày", selectedNgayBd, Modifier.weight(1f)) { selectedNgayBd = it }
+                DatePickerField("Đến ngày", selectedNgayKt, Modifier.weight(1f)) { selectedNgayKt = it }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Chọn Giờ
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TimePickerField("Bắt đầu", selectedGioBd, Modifier.weight(1f)) { selectedGioBd = it }
+                TimePickerField("Kết thúc", selectedGioKt, Modifier.weight(1f)) { selectedGioKt = it }
+            }
+
+            Spacer(Modifier.height(24.dp))
+            Text("Lặp lại", style = MaterialTheme.typography.titleMedium, color = PrimaryPink)
+
+            // Lựa chọn lặp lại
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                RepeatOption("Không", lapLai == "khong") { lapLai = "khong" }
+                RepeatOption("Ngày", lapLai == "hang_ngay") { lapLai = "hang_ngay" }
+                RepeatOption("Tuần", lapLai == "hang_tuan") { lapLai = "hang_tuan" }
+            }
+
+            Spacer(Modifier.height(40.dp))
+
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        // Tính toán 'thu' dựa trên ngày bắt đầu
+                        val thu = when(selectedNgayBd.dayOfWeek.value) {
+                            7 -> "CN"
+                            else -> (selectedNgayBd.dayOfWeek.value + 1).toString()
                         }
-                    )
-                }
+
+                        viewModel.addEvent(
+                            tieuDe = tieuDe.trim(),
+                            diaDiem = diaDiem.trim().ifEmpty { null },
+                            thu = thu, // Gán thứ tự động
+                            lapLai = lapLai,
+                            gioBd = selectedGioBd.format(timeFormatter),
+                            gioKt = selectedGioKt.format(timeFormatter),
+                            ngayBd = selectedNgayBd.format(dateFormatter),
+                            ngayKt = selectedNgayKt.format(dateFormatter)
+                        )
+                        onSuccess()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                enabled = tieuDe.isNotBlank()
+            ) {
+                Text("LƯU SỰ KIỆN", fontWeight = FontWeight.Bold)
             }
         }
+    }
+}
 
-        // Thời gian & ngày (tạm TextField, sau thay bằng picker)
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value = gioBd,
-                onValueChange = { gioBd = it },
-                label = { Text("Giờ bắt đầu (HH:mm)") },
-                modifier = Modifier.weight(1f)
-            )
-            OutlinedTextField(
-                value = gioKt,
-                onValueChange = { gioKt = it },
-                label = { Text("Giờ kết thúc (HH:mm)") },
-                modifier = Modifier.weight(1f)
-            )
-        }
+@Composable
+fun DatePickerField(label: String, date: LocalDate, modifier: Modifier, onDateSelected: (LocalDate) -> Unit) {
+    val context = LocalContext.current
+    OutlinedTextField(
+        value = date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+        onValueChange = {},
+        label = { Text(label) },
+        readOnly = true,
+        modifier = modifier.clickable {
+            val picker = android.app.DatePickerDialog(context, { _, y, m, d ->
+                onDateSelected(LocalDate.of(y, m + 1, d))
+            }, date.year, date.monthValue - 1, date.dayOfMonth)
+            picker.show()
+        },
+        enabled = false, // Vô hiệu hóa gõ phím để buộc click
+        colors = OutlinedTextFieldDefaults.colors(disabledTextColor = TextPrimary, disabledBorderColor = MaterialTheme.colorScheme.outline, disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant)
+    )
+}
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value = ngayBd,
-                onValueChange = { ngayBd = it },
-                label = { Text("Ngày bắt đầu (yyyy-MM-dd)") },
-                modifier = Modifier.weight(1f)
-            )
-            OutlinedTextField(
-                value = ngayKt,
-                onValueChange = { ngayKt = it },
-                label = { Text("Ngày kết thúc (yyyy-MM-dd)") },
-                modifier = Modifier.weight(1f)
-            )
-        }
+@Composable
+fun TimePickerField(label: String, time: LocalTime, modifier: Modifier, onTimeSelected: (LocalTime) -> Unit) {
+    val context = LocalContext.current
+    OutlinedTextField(
+        value = time.format(DateTimeFormatter.ofPattern("HH:mm")),
+        onValueChange = {},
+        label = { Text(label) },
+        readOnly = true,
+        modifier = modifier.clickable {
+            android.app.TimePickerDialog(context, { _, h, m ->
+                onTimeSelected(LocalTime.of(h, m))
+            }, time.hour, time.minute, true).show()
+        },
+        enabled = false,
+        colors = OutlinedTextFieldDefaults.colors(disabledTextColor = TextPrimary, disabledBorderColor = MaterialTheme.colorScheme.outline)
+    )
+}
 
-        Spacer(modifier = Modifier.weight(1f))
+@Composable
+fun RepeatOption(text: String, isSelected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = isSelected,
+        onClick = onClick,
+        label = { Text(text) },
+        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = PrimaryPink, selectedLabelColor = Color.White)
+    )
+}
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(onClick = onBack) {
-                Text("Hủy")
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = {
-                coroutineScope.launch {
-                    viewModel.addEvent(
-                        tieuDe = tieuDe.trim(),
-                        diaDiem = diaDiem.trim().ifEmpty { null },
-                        thu = null,
-                        lapLai = lapLai,
-                        gioBd = gioBd.trim().ifEmpty { null },
-                        gioKt = gioKt.trim().ifEmpty { null },
-                        ngayBd = ngayBd.trim(),
-                        ngayKt = ngayKt.trim()
-                    )
-                    onSuccess()
-                }
-            }) {
-                Text("Lưu")
-            }
-        }
+@Composable
+private fun AddEventDetailRow(icon: ImageVector, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = TextSecondary
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(text, style = MaterialTheme.typography.bodyMedium)
     }
 }

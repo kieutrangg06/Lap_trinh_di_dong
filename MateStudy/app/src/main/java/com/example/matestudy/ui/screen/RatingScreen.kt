@@ -1,112 +1,146 @@
 package com.example.matestudy.ui.screen
 
-import android.annotation.SuppressLint
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.matestudy.ui.viewmodel.ReviewViewModel
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.ui.text.style.TextAlign
+import com.example.matestudy.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 
-@SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RatingScreen(viewModel: ReviewViewModel) {
+    // SỬA LỖI: Sử dụng collectAsState cho TẤT CẢ các luồng dữ liệu từ ViewModel
     val monHocList by viewModel.monHocList.collectAsState(initial = emptyList())
+    val selectedMonHoc by viewModel.selectedMonHoc.collectAsState()
+    val currentRating by viewModel.rating.collectAsState()
+    val currentContent by viewModel.content.collectAsState()
+    val errorMsg by viewModel.error.collectAsState()
+
     val showAddDialog = remember { mutableStateOf(false) }
     val selectedMonHocId = remember { mutableStateOf<Long?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Đánh giá môn học và giảng viên", style = MaterialTheme.typography.titleLarge)
-
-        // Nút thêm đánh giá mới
-        Button(onClick = { showAddDialog.value = true }, modifier = Modifier.align(Alignment.End)) {
-            Icon(Icons.Default.Add, contentDescription = null)
-            Text("Thêm đánh giá mới")
+    Scaffold(
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { showAddDialog.value = true },
+                containerColor = PrimaryPink,
+                contentColor = Color.White,
+                shape = CircleShape
+            ) {
+                Icon(Icons.Default.Add, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Viết đánh giá")
+            }
         }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "Đánh giá môn học",
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black)
+                )
+                Text(
+                    "Chia sẻ trải nghiệm về giảng viên & môn học",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(Modifier.height(8.dp))
+            }
 
-        // Danh sách môn học
-        Text("Danh sách môn học", modifier = Modifier.padding(top = 16.dp))
-        LazyColumn {
             items(monHocList) { monHoc ->
                 val average by viewModel.getAverageRating(monHoc.id).collectAsState(initial = 0.0)
                 val count by viewModel.getReviewCount(monHoc.id).collectAsState(initial = 0)
 
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .clickable { selectedMonHocId.value = monHoc.id },
-                    elevation = CardDefaults.cardElevation(2.dp)
+                    onClick = {
+                        selectedMonHocId.value = if (selectedMonHocId.value == monHoc.id) null else monHoc.id
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = monHoc.tenMon ?: "Không tên",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = "GV: ${monHoc.tenGv ?: "Không có"}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Row {
-                                Icon(Icons.Default.Star, contentDescription = null)
-                                Text(String.format("%.1f", average ?: 0.0))
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(Modifier.size(40.dp), CircleShape, PrimaryLight) {
+                                Icon(Icons.Default.Book, null, Modifier.padding(10.dp), PrimaryPink)
                             }
-                            Text("$count đánh giá", style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Nếu chọn môn → hiển thị danh sách đánh giá chi tiết
-        selectedMonHocId.value?.let { monId ->
-            val reviews by viewModel.getReviewsByMonHoc(monId).collectAsState(initial = emptyList())
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Danh sách đánh giá", style = MaterialTheme.typography.titleMedium)
-
-            if (reviews.isEmpty()) {
-                Text(
-                    "Chưa có đánh giá",
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-            } else {
-                LazyColumn {
-                    items(reviews) { review ->
-                        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text("Sinh viên ID: ${review.sinh_vien_id}") // sửa: sinh_vien_id
-                                Row {
-                                    repeat(review.diem_sao ?: 0) { // sửa: diem_sao
-                                        Icon(Icons.Default.Star, contentDescription = null)
-                                    }
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(monHoc.tenMon ?: "Môn học", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Text("GV: ${monHoc.tenGv ?: "N/A"}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Star, null, Modifier.size(18.dp), Color(0xFFFFB100))
+                                    Text(String.format(" %.1f", average), fontWeight = FontWeight.Black, fontSize = 16.sp)
                                 }
-                                Text(review.noi_dung) // sửa: noi_dung
+                                Text("$count lượt", style = MaterialTheme.typography.labelSmall, color = Color.LightGray)
+                            }
+                        }
+
+                        if (selectedMonHocId.value == monHoc.id) {
+                            val reviews by viewModel.getReviewsByMonHoc(monHoc.id).collectAsState(initial = emptyList())
+                            HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color(0xFFF0F0F0))
+
+                            if (reviews.isEmpty()) {
                                 Text(
-                                    text = "Ngày: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(review.ngay_dang)}", // sửa: ngay_dang
+                                    "Chưa có nhận xét chi tiết",
+                                    modifier = Modifier.padding(8.dp),
+                                    color = Color.Gray,
                                     style = MaterialTheme.typography.bodySmall
                                 )
+                            } else {
+                                reviews.forEach { review ->
+                                    Column(Modifier.padding(bottom = 12.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            repeat(5) { i ->
+                                                Icon(
+                                                    Icons.Default.Star,
+                                                    null,
+                                                    Modifier.size(14.dp),
+                                                    if (i < (review.diem_sao ?: 0)) Color(0xFFFFB100) else Color.LightGray
+                                                )
+                                            }
+                                            Spacer(Modifier.width(8.dp))
+                                            Text("Sinh viên ẩn danh", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                                        }
+                                        Text(review.noi_dung, modifier = Modifier.padding(top = 4.dp), style = MaterialTheme.typography.bodyMedium)
+                                        Text(
+                                            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(review.ngay_dang),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color.LightGray
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
+            item { Spacer(Modifier.height(80.dp)) }
         }
     }
 
@@ -114,27 +148,40 @@ fun RatingScreen(viewModel: ReviewViewModel) {
     if (showAddDialog.value) {
         AlertDialog(
             onDismissRequest = { showAddDialog.value = false },
-            title = { Text("Thêm đánh giá mới") },
+            shape = MaterialTheme.shapes.large,
+            containerColor = Color.White,
+            title = { Text("Đánh giá mới", fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    // Chọn môn học
+                    Text("Môn học", style = MaterialTheme.typography.labelMedium)
+
                     var expanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = !expanded }
-                    ) {
-                        TextField(
-                            readOnly = true,
-                            value = viewModel.selectedMonHoc.value?.tenMon ?: "Chọn môn học",
-                            onValueChange = {},
-                            label = { Text("Môn học") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                            colors = ExposedDropdownMenuDefaults.textFieldColors(),
-                            modifier = Modifier.menuAnchor()
-                        )
-                        ExposedDropdownMenu(
+
+                    Box(modifier = Modifier.padding(vertical = 8.dp)) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { expanded = true },
+                            border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF9FAFB))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = selectedMonHoc?.tenMon ?: "Nhấn để chọn môn...",
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Icon(Icons.Default.ArrowDropDown, null)
+                            }
+                        }
+
+                        DropdownMenu(
                             expanded = expanded,
-                            onDismissRequest = { expanded = false }
+                            onDismissRequest = { expanded = false },
+                            modifier = Modifier.fillMaxWidth(0.7f)
                         ) {
                             monHocList.forEach { monHoc ->
                                 DropdownMenuItem(
@@ -148,39 +195,50 @@ fun RatingScreen(viewModel: ReviewViewModel) {
                         }
                     }
 
-                    // Đánh giá sao
-                    Row(modifier = Modifier.padding(top = 8.dp)) {
+                    Text("Mức độ hài lòng", style = MaterialTheme.typography.labelMedium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
                         (1..5).forEach { star ->
-                            Icon(
-                                Icons.Default.Star,
-                                contentDescription = null,
-                                tint = if (star <= viewModel.rating.value) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.clickable { viewModel.setRating(star) }
-                            )
+                            IconButton(onClick = { viewModel.setRating(star) }) {
+                                Icon(
+                                    Icons.Default.Star,
+                                    null,
+                                    tint = if (star <= currentRating) Color(0xFFFFB100) else Color.LightGray,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
                         }
                     }
 
-                    // Nội dung
-                    TextField(
-                        value = viewModel.content.value,
+                    OutlinedTextField(
+                        value = currentContent,
                         onValueChange = { viewModel.setContent(it) },
-                        label = { Text("Nội dung") },
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        label = { Text("Cảm nhận của bạn...") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        shape = MaterialTheme.shapes.medium
                     )
 
-                    viewModel.error.value?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    errorMsg?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
+                    }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    viewModel.submitReview { showAddDialog.value = false }
-                }) {
+                Button(
+                    onClick = { viewModel.submitReview { showAddDialog.value = false } },
+                    shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryPink)
+                ) {
                     Text("Gửi đánh giá")
                 }
             },
             dismissButton = {
-                Button(onClick = { showAddDialog.value = false }) {
-                    Text("Hủy")
+                TextButton(onClick = { showAddDialog.value = false }) {
+                    Text("Hủy", color = TextSecondary)
                 }
             }
         )

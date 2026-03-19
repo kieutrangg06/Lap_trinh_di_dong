@@ -25,8 +25,9 @@ class ForumViewModel(
         .map { it?.id ?: 0L }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 
-    val posts: StateFlow<List<Post>> = _currentCategory.flatMapLatest { cat ->
-        val userId = currentUserId.value
+    val posts: StateFlow<List<Post>> = combine(_currentCategory, currentUserId) { cat, userId ->
+        cat to userId
+    }.flatMapLatest { (cat, userId) ->
         when (cat) {
             "all" -> forumRepository.getAllPosts(userId)
             "featured" -> forumRepository.getFeaturedPosts(userId)
@@ -45,13 +46,10 @@ class ForumViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _selectedPost = MutableStateFlow<Post?>(null)
-    val selectedPost: StateFlow<Post?> = _selectedPost.asStateFlow()
 
-    val comments: StateFlow<List<Comment>> = _selectedPost.flatMapLatest { post ->
-        if (post != null) forumRepository.getCommentsForPost(post.id)
-        else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+
+
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -64,18 +62,45 @@ class ForumViewModel(
         _searchQuery.value = query
     }
 
+    // ForumViewModel.kt
+
+    private val _selectedPostId = MutableStateFlow<Long?>(null)
+
+    // Sử dụng biến post đơn giản để kiểm tra
+    private val _selectedPost = MutableStateFlow<Post?>(null)
+    val selectedPost: StateFlow<Post?> = _selectedPost.asStateFlow()
+
     fun loadPostDetail(postId: Long) {
+        _selectedPostId.value = postId
         viewModelScope.launch {
-            val postEntity = forumRepository.getPostById(postId)
-            if (postEntity != null) {
-                val likeCount = forumRepository.getLikeCount(postId).firstOrNull() ?: 0
-                val isLiked = forumRepository.toggleLike(postId, currentUserId.value) // chỉ load, không toggle
-                _selectedPost.value = postEntity.toPost(likeCount, isLiked)
-            } else {
-                _error.value = "Không tìm thấy bài viết"
+            try {
+                // 1. Lấy dữ liệu thô
+                val entity = forumRepository.getPostById(postId)
+
+                if (entity != null) {
+                    // 2. Lấy LikeCount và trạng thái Like (không cần Flow phức tạp ở đây để test trước)
+                    val likes = forumRepository.getLikeCount(postId).firstOrNull() ?: 0
+                    val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: 0L
+                    val isLiked = forumRepository.isPostLiked(postId, userId)
+
+                    // 3. Cập nhật vào State
+                    _selectedPost.value = entity.toPost(likes, isLiked)
+                } else {
+                    println("DEBUG: Khong tim thay Entity cho ID $postId")
+                }
+            } catch (e: Exception) {
+                _error.value = "Lỗi tải bài viết: ${e.message}"
             }
         }
     }
+
+    // Quan sát bình luận dựa trên ID
+    val comments: StateFlow<List<Comment>> = _selectedPostId.flatMapLatest { id ->
+        if (id != null) forumRepository.getCommentsForPost(id)
+        else flowOf(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+
 
     fun createPost(tieuDe: String, noiDung: String, category: String, filePath: String?) {
         viewModelScope.launch {

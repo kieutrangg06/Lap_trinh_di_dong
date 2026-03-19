@@ -50,76 +50,67 @@ class ScheduleViewModel(
     }
 
     private suspend fun loadEvents(sinhVienId: Long) {
+        // 1. Lấy toàn bộ danh sách lịch từ Repository
         val lichList = scheduleRepository.getLichCaNhan(sinhVienId).firstOrNull() ?: emptyList()
         val eventList = mutableListOf<Event>()
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+        // Bản đồ chuyển đổi Thứ từ DB sang DayOfWeek của hệ thống
         val dayMap = mapOf("2" to 1, "3" to 2, "4" to 3, "5" to 4, "6" to 5, "7" to 6, "CN" to 7)
 
         for (lich in lichList) {
+            // --- XỬ LÝ LỚP HỌC (Giữ nguyên hoặc tối ưu) ---
             if (lich.loai == "lop_chinh_thuc" && lich.monHocId != null) {
-                val mon: MonHocEntity? = scheduleRepository.getMonHocById(lich.monHocId)
+                val mon = scheduleRepository.getMonHocById(lich.monHocId)
                 mon?.let {
-                    var date = LocalDate.parse(it.ngayBatDau, formatter)
-                    val end = LocalDate.parse(it.ngayKetThuc, formatter)
+                    var tempDate = LocalDate.parse(it.ngayBatDau, formatter)
+                    val endDate = LocalDate.parse(it.ngayKetThuc, formatter)
+                    val thuInt = dayMap[it.thu] ?: -1
 
-                    while (!date.isAfter(end)) {
-                        val thuInt = dayMap[it.thu] ?: continue
-                        if (date.dayOfWeek.value == thuInt) {
-                            eventList.add(
-                                Event(
-                                    id = lich.id,
-                                    title = it.tenMon,
-                                    location = it.diaDiem,
-                                    teacher = it.tenGv,
-                                    startTime = it.gioBatDau?.let { time -> LocalTime.parse(time) },
-                                    endTime = it.gioKetThuc?.let { time -> LocalTime.parse(time) },
-                                    date = date,
-                                    color = lich.mauSac,
-                                    loai = lich.loai,
-                                    originalId = it.id
-                                )
-                            )
+                    while (!tempDate.isAfter(endDate)) {
+                        if (tempDate.dayOfWeek.value == thuInt) {
+                            eventList.add(createEventFromLich(lich, it.tenMon, it.diaDiem, tempDate, it.gioBatDau, it.gioKetThuc, it.tenGv))
                         }
-                        date = date.plusDays(1)
+                        tempDate = tempDate.plusDays(1)
                     }
                 }
-            } else if (lich.loai == "su_kien_rieng" && lich.skId != null) {
-                val sk: SkCaNhanEntity? = scheduleRepository.getSkById(lich.skId)
+            }
+            // --- XỬ LÝ SỰ KIỆN RIÊNG (Phần quan trọng) ---
+            else if (lich.loai == "su_kien_rieng" && lich.skId != null) {
+                val sk = scheduleRepository.getSkById(lich.skId)
                 sk?.let {
-                    var date = LocalDate.parse(it.ngayBatDau, formatter)
-                    val end = LocalDate.parse(it.ngayKetThuc, formatter)
+                    var tempDate = LocalDate.parse(it.ngayBatDau, formatter)
+                    val endDate = LocalDate.parse(it.ngayKetThuc, formatter)
 
-                    while (!date.isAfter(end)) {
-                        eventList.add(
-                            Event(
-                                id = lich.id,
-                                title = it.tieuDe,
-                                location = it.diaDiem,
-                                startTime = it.gioBatDau?.let { time -> LocalTime.parse(time) },
-                                endTime = it.gioKetThuc?.let { time -> LocalTime.parse(time) },
-                                date = date,
-                                color = lich.mauSac,
-                                loai = lich.loai,
-                                repeat = it.lapLai,
-                                originalId = it.id
-                            )
-                        )
-                        when (it.lapLai) {
-                            "hang_ngay" -> date = date.plusDays(1)
-                            "hang_tuan" -> date = date.plusWeeks(1)
-                            else -> break
+                    // Quan trọng: Nếu không lặp, chỉ add 1 lần rồi thoát
+                    if (it.lapLai == "khong" || it.lapLai == null) {
+                        eventList.add(createEventFromSk(lich, it, tempDate))
+                    } else {
+                        // Nếu có lặp (hàng ngày hoặc hàng tuần)
+                        while (!tempDate.isAfter(endDate)) {
+                            eventList.add(createEventFromSk(lich, it, tempDate))
+
+                            when (it.lapLai) {
+                                "hang_ngay" -> tempDate = tempDate.plusDays(1)
+                                "hang_tuan" -> tempDate = tempDate.plusWeeks(1)
+                                else -> break
+                            }
                         }
                     }
                 }
             }
         }
 
+        // 2. Cập nhật State Flow (Bỏ bớt filter khắt khe để dễ debug)
         val firstOfMonth = _currentMonth.value.withDayOfMonth(1)
         val lastOfMonth = firstOfMonth.plusMonths(1).minusDays(1)
+
+        // Mở rộng phạm vi filter để bao phủ cả các ô trống ở đầu/cuối Grid lịch (42 ô)
         _events.value = eventList.filter {
             !it.date.isBefore(firstOfMonth.minusDays(7)) && !it.date.isAfter(lastOfMonth.plusDays(7))
         }
     }
+
 
     fun selectEvent(event: Event) {
         _selectedEvent.value = event
@@ -191,5 +182,44 @@ class ScheduleViewModel(
         }
 
         loadEvents(lich.sinhVienId)
+    }
+
+    // Thêm các hàm này vào cuối class ScheduleViewModel
+
+    private fun createEventFromSk(lich: LichCaNhanEntity, sk: SkCaNhanEntity, date: LocalDate): Event {
+        return Event(
+            id = lich.id, // ID của dòng trong bảng LichCaNhan
+            title = sk.tieuDe,
+            location = sk.diaDiem,
+            startTime = sk.gioBatDau?.let { LocalTime.parse(it) },
+            endTime = sk.gioKetThuc?.let { LocalTime.parse(it) },
+            date = date,
+            color = lich.mauSac ?: "#3788d8",
+            loai = lich.loai,
+            originalId = sk.id // ID của sự kiện gốc trong bảng SkCaNhan
+        )
+    }
+
+    private fun createEventFromLich(
+        lich: LichCaNhanEntity,
+        tenMon: String,
+        diaDiem: String?,
+        date: LocalDate,
+        gioBd: String?,
+        gioKt: String?,
+        tenGv: String?
+    ): Event {
+        return Event(
+            id = lich.id,
+            title = tenMon,
+            location = diaDiem,
+            teacher = tenGv,
+            startTime = gioBd?.let { LocalTime.parse(it) },
+            endTime = gioKt?.let { LocalTime.parse(it) },
+            date = date,
+            color = lich.mauSac ?: "#3788d8",
+            loai = lich.loai,
+            originalId = lich.monHocId ?: 0L
+        )
     }
 }
