@@ -120,29 +120,31 @@ class AuthViewModel(
     fun login(onSuccess: () -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
-            _error.value = null
-            val identifier = _emailOrUsername.value.trim()
-            val pass = _password.value
-
-            if (identifier.isBlank() || pass.isBlank()) {
-                _error.value = "Vui lòng nhập đầy đủ thông tin"
-                _isLoading.value = false
-                return@launch
-            }
-
             try {
+                val identifier = _emailOrUsername.value.trim()
+                val pass = _password.value
+
                 val userEntity = repository.findUserByUsernameOrEmail(identifier)
-                if (userEntity != null && userEntity.matKhau == pass) { // TODO: hash thực tế
-                    _currentUser.value = userEntity.toUserDomain()
+                if (userEntity != null && userEntity.matKhau == pass) {
+                    // QUAN TRỌNG: Lưu vào session để getCurrentUserFlow nhận được data
+                    repository.loginToSession(userEntity)
                     onSuccess()
                 } else {
-                    _error.value = "Tên đăng nhập / email hoặc mật khẩu không đúng"
+                    _error.value = "Thông tin không chính xác"
                 }
             } catch (e: Exception) {
-                _error.value = "Lỗi: ${e.message ?: "Không thể đăng nhập"}"
+                _error.value = e.message
             } finally {
                 _isLoading.value = false
             }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            // Chỉ xóa session hiện tại, không xóa dữ liệu trong collection "users"
+            repository.logout()
+            clearAllFields()
         }
     }
 
@@ -248,12 +250,7 @@ class AuthViewModel(
     }
 
     // ── Đăng xuất ───────────────────────────────────────────────────────────────────
-    fun logout() {
-        viewModelScope.launch {
-            repository.clearUserData()
-            clearAllFields()
-        }
-    }
+
 
     private fun clearAllFields() {
         _emailOrUsername.value = ""

@@ -10,6 +10,7 @@ import com.example.matestudy.data.repository.AuthRepository
 import com.example.matestudy.data.repository.ScheduleRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.LocalTime
@@ -19,6 +20,12 @@ class ScheduleViewModel(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
+    private val _currentWeekStart = MutableStateFlow(LocalDate.now().with(DayOfWeek.MONDAY))
+    val currentWeekStart: StateFlow<LocalDate> = _currentWeekStart.asStateFlow()
+
+    fun changeWeek(offset: Int) {
+        _currentWeekStart.value = _currentWeekStart.value.plusWeeks(offset.toLong())
+    }
     private val _currentMonth = MutableStateFlow(LocalDate.now())
     val currentMonth: StateFlow<LocalDate> = _currentMonth.asStateFlow()
 
@@ -30,6 +37,11 @@ class ScheduleViewModel(
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    private val _eventToEdit = MutableStateFlow<Event?>(null)
+    val eventToEdit: StateFlow<Event?> = _eventToEdit.asStateFlow()
+
+    fun setEventToEdit(event: Event?) { _eventToEdit.value = event }
 
     init {
         viewModelScope.launch {
@@ -221,5 +233,45 @@ class ScheduleViewModel(
             loai = lich.loai,
             originalId = lich.monHocId ?: 0L
         )
+    }
+
+    // Thêm vào class ScheduleViewModel
+    suspend fun updateEvent(
+        eventId: Long, // ID của LichCaNhan
+        originalId: Long, // ID của SkCaNhan
+        tieuDe: String,
+        diaDiem: String?,
+        thu: String?,
+        lapLai: String,
+        gioBd: String?,
+        gioKt: String?,
+        ngayBd: String,
+        ngayKt: String,
+        color: String
+    ) {
+        val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: return
+
+        // 1. Cập nhật thông tin sự kiện gốc
+        val sk = SkCaNhanEntity(
+            id = originalId,
+            sinhVienId = userId,
+            tieuDe = tieuDe.trim(),
+            diaDiem = diaDiem,
+            thu = thu,
+            lapLai = lapLai,
+            gioBatDau = gioBd,
+            gioKetThuc = gioKt,
+            ngayBatDau = ngayBd.trim(),
+            ngayKetThuc = ngayKt.trim()
+        )
+        scheduleRepository.updateSk(sk)
+
+        // 2. Cập nhật màu sắc trong bảng lịch
+        val lich = scheduleRepository.getLichById(eventId)
+        lich?.let {
+            scheduleRepository.updateLich(it.copy(mauSac = color))
+        }
+
+        loadEvents(userId)
     }
 }

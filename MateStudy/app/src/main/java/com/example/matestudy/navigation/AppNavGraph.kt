@@ -129,6 +129,27 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                 })
                 NotificationScreen(viewModel = vm, onNavigateToPost = { bottomNavController.navigate("post_detail/$it") }, onNavigateToReview = {}, onBack = {})
             }
+
+            composable("edit_event") {
+                val scheduleVm: ScheduleViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return ScheduleViewModel(
+                                ScheduleRepository(firestoreDataSource),
+                                AuthRepository(firestoreDataSource)
+                            ) as T
+                        }
+                    }
+                )
+                val event by scheduleVm.eventToEdit.collectAsState()
+
+                AddEventScreen(
+                    viewModel = scheduleVm,
+                    eventToEdit = event,
+                    onBack = { bottomNavController.popBackStack() },
+                    onSuccess = { bottomNavController.popBackStack() }
+                )
+            }
         }
     }
 }

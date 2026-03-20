@@ -1,12 +1,17 @@
 // AddEventScreen.kt (sửa)
 package com.example.matestudy.ui.screen
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
@@ -16,9 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.matestudy.ui.viewmodel.ScheduleViewModel
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.example.matestudy.data.Event
 import com.example.matestudy.ui.theme.PrimaryPink
 import com.example.matestudy.ui.theme.TextPrimary
 import com.example.matestudy.ui.theme.TextSecondary
@@ -30,105 +38,147 @@ import java.time.format.DateTimeFormatter
 // AddEventScreen.kt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddEventScreen(viewModel: ScheduleViewModel, onBack: () -> Unit, onSuccess: () -> Unit) {
+fun AddEventScreen(
+    viewModel: ScheduleViewModel,
+    eventToEdit: Event? = null,
+    onBack: () -> Unit,
+    onSuccess: () -> Unit
+) {
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
 
-    var tieuDe by remember { mutableStateOf("") }
-    var diaDiem by remember { mutableStateOf("") }
-    var lapLai by remember { mutableStateOf("khong") }
+    // Khởi tạo State (Điền dữ liệu cũ nếu là chế độ Sửa)
+    var tieuDe by remember { mutableStateOf(eventToEdit?.title ?: "") }
+    var diaDiem by remember { mutableStateOf(eventToEdit?.location ?: "") }
+    var lapLai by remember { mutableStateOf(eventToEdit?.repeat ?: "khong") }
+    var selectedColor by remember { mutableStateOf(eventToEdit?.color ?: "#3788d8") }
 
-    // State cho Date và Time
-    var selectedNgayBd by remember { mutableStateOf(LocalDate.now()) }
-    var selectedNgayKt by remember { mutableStateOf(LocalDate.now()) }
-    var selectedGioBd by remember { mutableStateOf(LocalTime.of(8, 0)) }
-    var selectedGioKt by remember { mutableStateOf(LocalTime.of(10, 0)) }
+    var selectedNgayBd by remember { mutableStateOf(eventToEdit?.date ?: LocalDate.now()) }
+    var selectedNgayKt by remember { mutableStateOf(eventToEdit?.date ?: LocalDate.now()) }
+    var selectedGioBd by remember { mutableStateOf(eventToEdit?.startTime ?: LocalTime.of(8, 0)) }
+    var selectedGioKt by remember { mutableStateOf(eventToEdit?.endTime ?: LocalTime.of(10, 0)) }
 
-    val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    val colors = listOf("#3788d8", "#e67c73", "#f4511e", "#f6bf26", "#33b679", "#0b8043", "#8e24aa")
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Thêm sự kiện cá nhân", fontWeight = FontWeight.Bold) },
+                title = { Text(if (eventToEdit == null) "Thêm sự kiện" else "Sửa sự kiện", fontWeight = FontWeight.Bold) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.Close, null) } }
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp)
+        ) {
+            // --- THÔNG TIN CHI TIẾT ---
             Text("Chi tiết sự kiện", style = MaterialTheme.typography.titleMedium, color = PrimaryPink)
 
             OutlinedTextField(
                 value = tieuDe, onValueChange = { tieuDe = it },
                 label = { Text("Tiêu đề sự kiện") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 leadingIcon = { Icon(Icons.Default.Edit, null) }
             )
 
-            Spacer(Modifier.height(12.dp))
-
             OutlinedTextField(
                 value = diaDiem, onValueChange = { diaDiem = it },
-                label = { Text("Địa điểm (Phòng học, Zoom...)") },
-                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Địa điểm") },
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 leadingIcon = { Icon(Icons.Default.LocationOn, null) }
             )
 
-            Spacer(Modifier.height(24.dp))
-            Text("Thời gian", style = MaterialTheme.typography.titleMedium, color = PrimaryPink)
+            // --- CHỌN MÀU SẮC ---
+            Spacer(Modifier.height(20.dp))
+            Text("Màu sắc hiển thị", style = MaterialTheme.typography.titleMedium, color = PrimaryPink)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                colors.forEach { colorStr ->
+                    val colorObj = Color(android.graphics.Color.parseColor(colorStr))
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(colorObj)
+                            .clickable { selectedColor = colorStr }
+                            .then(
+                                if (selectedColor == colorStr)
+                                    Modifier.border(2.dp, Color.Black, CircleShape)
+                                else Modifier
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (selectedColor == colorStr) {
+                            Icon(Icons.Default.Add, null, tint = Color.White)
+                        }
+                    }
+                }
+            }
 
-            // Chọn Ngày
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // --- THỜI GIAN ---
+            Spacer(Modifier.height(16.dp))
+            Text("Thời gian", style = MaterialTheme.typography.titleMedium, color = PrimaryPink)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
                 DatePickerField("Từ ngày", selectedNgayBd, Modifier.weight(1f)) { selectedNgayBd = it }
                 DatePickerField("Đến ngày", selectedNgayKt, Modifier.weight(1f)) { selectedNgayKt = it }
             }
-
-            Spacer(Modifier.height(8.dp))
-
-            // Chọn Giờ
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
                 TimePickerField("Bắt đầu", selectedGioBd, Modifier.weight(1f)) { selectedGioBd = it }
                 TimePickerField("Kết thúc", selectedGioKt, Modifier.weight(1f)) { selectedGioKt = it }
             }
 
+            // --- CHẾ ĐỘ LẶP LẠI (QUAN TRỌNG) ---
             Spacer(Modifier.height(24.dp))
             Text("Lặp lại", style = MaterialTheme.typography.titleMedium, color = PrimaryPink)
-
-            // Lựa chọn lặp lại
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Tận dụng hàm RepeatOption đã viết ở file trước
                 RepeatOption("Không", lapLai == "khong") { lapLai = "khong" }
-                RepeatOption("Ngày", lapLai == "hang_ngay") { lapLai = "hang_ngay" }
-                RepeatOption("Tuần", lapLai == "hang_tuan") { lapLai = "hang_tuan" }
+                RepeatOption("Hàng ngày", lapLai == "hang_ngay") { lapLai = "hang_ngay" }
+                RepeatOption("Hàng tuần", lapLai == "hang_tuan") { lapLai = "hang_tuan" }
             }
 
+            // --- NÚT LƯU ---
             Spacer(Modifier.height(40.dp))
-
             Button(
                 onClick = {
                     coroutineScope.launch {
-                        // Tính toán 'thu' dựa trên ngày bắt đầu
-                        val thu = when(selectedNgayBd.dayOfWeek.value) {
-                            7 -> "CN"
-                            else -> (selectedNgayBd.dayOfWeek.value + 1).toString()
-                        }
+                        val thu = if(selectedNgayBd.dayOfWeek.value == 7) "CN" else (selectedNgayBd.dayOfWeek.value + 1).toString()
 
-                        viewModel.addEvent(
-                            tieuDe = tieuDe.trim(),
-                            diaDiem = diaDiem.trim().ifEmpty { null },
-                            thu = thu, // Gán thứ tự động
-                            lapLai = lapLai,
-                            gioBd = selectedGioBd.format(timeFormatter),
-                            gioKt = selectedGioKt.format(timeFormatter),
-                            ngayBd = selectedNgayBd.format(dateFormatter),
-                            ngayKt = selectedNgayKt.format(dateFormatter)
-                        )
+                        if (eventToEdit == null) {
+                            viewModel.addEvent(
+                                tieuDe, diaDiem.ifEmpty { null }, thu, lapLai,
+                                selectedGioBd.format(timeFormatter), selectedGioKt.format(timeFormatter),
+                                selectedNgayBd.format(dateFormatter), selectedNgayKt.format(dateFormatter), selectedColor
+                            )
+                        } else {
+                            viewModel.updateEvent(
+                                eventToEdit.id, eventToEdit.originalId, tieuDe, diaDiem.ifEmpty { null }, thu, lapLai,
+                                selectedGioBd.format(timeFormatter), selectedGioKt.format(timeFormatter),
+                                selectedNgayBd.format(dateFormatter), selectedNgayKt.format(dateFormatter), selectedColor
+                            )
+                        }
                         onSuccess()
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(12.dp),
                 enabled = tieuDe.isNotBlank()
             ) {
-                Text("LƯU SỰ KIỆN", fontWeight = FontWeight.Bold)
+                Text(
+                    text = if (eventToEdit == null) "LƯU SỰ KIỆN" else "CẬP NHẬT THAY ĐỔI",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
             }
         }
     }

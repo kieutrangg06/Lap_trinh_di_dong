@@ -225,10 +225,10 @@ fun ScheduleScreen(
     }
 
     // Dialog Chi tiết
+    // Trong ScheduleScreen.kt, phần Dialog Chi tiết
     selectedEvent?.let { event ->
         AlertDialog(
             onDismissRequest = { viewModel.clearSelectedEvent() },
-            shape = MaterialTheme.shapes.large,
             title = { Text(event.title, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -238,9 +238,23 @@ fun ScheduleScreen(
                     DetailRow(Icons.Default.CalendarToday, event.date.toString())
                 }
             },
-            confirmButton = { Button(onClick = { viewModel.clearSelectedEvent() }) { Text("Đóng") } },
+            confirmButton = {
+                // Nút Sửa mới
+                Button(onClick = {
+                    val eventJson = /* Bạn có thể truyền qua Bundle hoặc đơn giản là lưu vào biến tạm ở ViewModel */
+                        viewModel.clearSelectedEvent()
+                    navController.navigate("edit_event")
+                }) {
+                    Text("Sửa")
+                }
+            },
             dismissButton = {
-                TextButton(onClick = { coroutineScope.launch { viewModel.deleteEvent(event); viewModel.clearSelectedEvent() } }) {
+                TextButton(onClick = {
+                    coroutineScope.launch {
+                        viewModel.deleteEvent(event)
+                        viewModel.clearSelectedEvent()
+                    }
+                }) {
                     Text("Xóa", color = ErrorRed)
                 }
             }

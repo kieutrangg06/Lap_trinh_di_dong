@@ -38,18 +38,31 @@ class FirestoreDataSource {
             .toObject(UserEntity::class.java)
     }
 
+    // Giả sử mỗi thiết bị có 1 ID duy nhất hoặc dùng ID cố định "current_session"
+    private val SESSION_ID = "current_session"
+
+    // Thay đổi hàm lấy User hiện tại: Lắng nghe document trong collection 'sessions'
     fun getCurrentUserFlow(): Flow<UserEntity?> = callbackFlow {
-        val listener = db.collection("users")
-            .limit(1)
+        val listener = db.collection("sessions").document(SESSION_ID)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     close(error)
                     return@addSnapshotListener
                 }
-                val user = snapshot?.documents?.firstOrNull()?.toObject(UserEntity::class.java)
+                val user = snapshot?.toObject(UserEntity::class.java)
                 trySend(user)
             }
         awaitClose { listener.remove() }
+    }
+
+    // Hàm này dùng để "Lưu phiên đăng nhập"
+    suspend fun setCurrentSession(user: UserEntity) {
+        db.collection("sessions").document(SESSION_ID).set(user).await()
+    }
+
+    // Hàm này dùng để "Xóa phiên đăng nhập" (Logout)
+    suspend fun clearSession() {
+        db.collection("sessions").document(SESSION_ID).delete().await()
     }
 
     suspend fun findByUsername(username: String): UserEntity? {
