@@ -29,9 +29,14 @@ class AdminForumViewModel(private val repository: ForumRepository) : ViewModel()
 
     fun setFilter(status: String) { _filterStatus.value = status }
 
-    fun approvePost(postId: Long) = viewModelScope.launch { repository.approvePost(postId) }
-
-    fun hidePost(postId: Long) = viewModelScope.launch { repository.hidePost(postId) }
-
     fun deletePost(postId: Long) = viewModelScope.launch { repository.deletePost(postId) }
+
+    fun approvePost(postId: Long) = viewModelScope.launch {
+        repository.approvePostWithNotify(postId)
+    }
+
+    fun hidePost(postId: Long) = viewModelScope.launch {
+        repository.hidePost(postId)
+        // Bạn có thể thêm notify "Bài viết bị ẩn do vi phạm" tương tự tại đây
+    }
 }

@@ -449,10 +449,21 @@ class FirestoreDataSource {
     // 5. THÔNG BÁO - Notification
     // ────────────────────────────────────────────────
 
+    // 1. Khi tạo: Dùng nanoTime làm ID cho cả Document Name và Field ID
     suspend fun insertThongBao(thongBao: ThongBaoEntity) {
-        val ref = db.collection("thong_bao").document()
-        val generatedId = ref.id.hashCode().toLong().coerceAtLeast(1L)
-        ref.set(thongBao.copy(id = generatedId)).await()
+        val id = System.nanoTime()
+        db.collection("thong_bao")
+            .document(id.toString()) // Tên document là chuỗi số
+            .set(thongBao.copy(id = id)) // Field id là số Long
+            .await()
+    }
+
+    // 2. Khi đánh dấu đã đọc: Dùng ID đó để tìm đúng Document Name
+    suspend fun markAsRead(thongBaoId: Long) {
+        db.collection("thong_bao")
+            .document(thongBaoId.toString()) // Tìm đúng document có tên là ID đó
+            .update("daDoc", true)
+            .await()
     }
 
     fun getThongBaoCuaToi(sinhVienId: Long): Flow<List<ThongBaoEntity>> = callbackFlow {
@@ -467,12 +478,6 @@ class FirestoreDataSource {
                 trySend(snap?.toObjects(ThongBaoEntity::class.java) ?: emptyList())
             }
         awaitClose { listener.remove() }
-    }
-
-    suspend fun markAsRead(thongBaoId: Long) {
-        db.collection("thong_bao").document(thongBaoId.toString())
-            .update("daDoc", true)
-            .await()
     }
 
     suspend fun markAllAsRead(sinhVienId: Long) {

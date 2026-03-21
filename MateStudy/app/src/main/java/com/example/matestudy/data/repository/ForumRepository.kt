@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import com.example.matestudy.data.toComment
 
-class ForumRepository(private val firestore: FirestoreDataSource) {
+class ForumRepository(private val firestore: FirestoreDataSource, private val thongBaoRepo: ThongBaoRepository) {
 
     // ────────────────────────────────────────────────
     // 1. Lấy danh sách bài viết (các màn hình chính)
@@ -59,6 +59,19 @@ class ForumRepository(private val firestore: FirestoreDataSource) {
 
     suspend fun addComment(comment: CommentEntity) {
         firestore.insertComment(comment)
+
+        // Gửi thông báo cho tác giả bài viết
+        val post = firestore.getPostById(comment.bai_viet_id)
+        if (post != null && post.tac_gia_id != comment.tac_gia_id) {
+            thongBaoRepo.createThongBao(ThongBaoEntity(
+                sinhVienId = post.tac_gia_id,
+                tieuDe = "Bình luận mới",
+                noiDung = "Ai đó đã bình luận vào bài viết '${post.tieu_de}' của bạn.",
+                loai = "bai_viet",
+                idLienQuan = post.id,
+                loaiLienQuan = "comment"
+            ))
+        }
     }
 
     // ────────────────────────────────────────────────
@@ -74,12 +87,40 @@ class ForumRepository(private val firestore: FirestoreDataSource) {
 
     suspend fun toggleLike(postId: Long, userId: Long): Boolean {
         val existing = firestore.getLikeByUser(postId, userId)
+        val post = firestore.getPostById(postId)
+
         return if (existing != null) {
             firestore.deleteLike(existing)
-            false // unliked
+            false
         } else {
             firestore.insertLike(LikeEntity(postId, userId))
-            true // liked
+            // Gửi thông báo nếu không phải tự mình like bài mình
+            if (post != null && post.tac_gia_id != userId) {
+                thongBaoRepo.createThongBao(ThongBaoEntity(
+                    sinhVienId = post.tac_gia_id,
+                    tieuDe = "Lượt thích mới",
+                    noiDung = "Ai đó đã thích bài viết '${post.tieu_de}' của bạn.",
+                    loai = "bai_viet",
+                    idLienQuan = post.id,
+                    loaiLienQuan = "like"
+                ))
+            }
+            true
+        }
+    }
+
+    // Thêm các hàm hỗ trợ Admin gửi thông báo (xem phần Admin bên dưới)
+    suspend fun approvePostWithNotify(postId: Long) {
+        firestore.updatePostStatus(postId, "da_duyet")
+        val post = firestore.getPostById(postId)
+        post?.let {
+            thongBaoRepo.createThongBao(ThongBaoEntity(
+                sinhVienId = it.tac_gia_id,
+                tieuDe = "Bài viết đã được duyệt",
+                noiDung = "Chúc mừng! Bài viết '${it.tieu_de}' của bạn đã công khai.",
+                loai = "bai_viet",
+                idLienQuan = it.id
+            ))
         }
     }
 

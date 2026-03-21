@@ -57,13 +57,23 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
     val bottomNavController = rememberNavController()
     val firestoreDataSource = remember { FirestoreDataSource() }
 
+    // ────────────────────────────────────────────────────────────────
+    // 1. Khởi tạo Repository tập trung (Để truyền thongBaoRepo)
+    // ────────────────────────────────────────────────────────────────
+    val thongBaoRepo = remember { ThongBaoRepository(firestoreDataSource) }
+    val authRepo = remember { AuthRepository(firestoreDataSource) }
+    val forumRepo = remember { ForumRepository(firestoreDataSource, thongBaoRepo) }
+    val reviewRepo = remember { ReviewRepository(firestoreDataSource, thongBaoRepo) }
+    val scheduleRepo = remember { ScheduleRepository(firestoreDataSource) }
+
     val currentUser by authViewModel.currentUser.collectAsState()
     val isAdmin = currentUser?.vaiTro == "admin"
 
+    // Khởi tạo forumViewModel dùng chung cho Home và Detail
     val forumViewModel: ForumViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return ForumViewModel(ForumRepository(firestoreDataSource), AuthRepository(firestoreDataSource)) as T
+                return ForumViewModel(forumRepo, authRepo) as T
             }
         }
     )
@@ -82,7 +92,7 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
             modifier = Modifier.padding(innerPadding)
         ) {
             // ────────────────────────────────────────────────────────────────
-            // 1. Các route CHUNG (dùng được cho cả user và admin)
+            // 1. Các route CHUNG
             // ────────────────────────────────────────────────────────────────
             composable(
                 "post_detail/{postId}",
@@ -97,7 +107,7 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
             }
 
             // ────────────────────────────────────────────────────────────────
-            // 2. Các route DÀNH RIÊNG CHO USER (thông thường)
+            // 2. Các route DÀNH RIÊNG CHO USER
             // ────────────────────────────────────────────────────────────────
             if (!isAdmin) {
                 composable(BottomNavItem.Home.route) {
@@ -119,7 +129,7 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                 composable(BottomNavItem.Schedule.route) {
                     val vm: ScheduleViewModel = viewModel(factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            ScheduleViewModel(ScheduleRepository(firestoreDataSource), AuthRepository(firestoreDataSource)) as T
+                            ScheduleViewModel(scheduleRepo, authRepo) as T
                     })
                     ScheduleScreen(viewModel = vm, navController = bottomNavController)
                 }
@@ -127,7 +137,7 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                 composable("add_personal_event") {
                     val vm: ScheduleViewModel = viewModel(factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            ScheduleViewModel(ScheduleRepository(firestoreDataSource), AuthRepository(firestoreDataSource)) as T
+                            ScheduleViewModel(scheduleRepo, authRepo) as T
                     })
                     AddEventScreen(
                         viewModel = vm,
@@ -137,20 +147,14 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                 }
 
                 composable("edit_event") {
-                    val scheduleVm: ScheduleViewModel = viewModel(
-                        factory = object : ViewModelProvider.Factory {
-                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return ScheduleViewModel(
-                                    ScheduleRepository(firestoreDataSource),
-                                    AuthRepository(firestoreDataSource)
-                                ) as T
-                            }
-                        }
-                    )
-                    val event by scheduleVm.eventToEdit.collectAsState()
+                    val vm: ScheduleViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            ScheduleViewModel(scheduleRepo, authRepo) as T
+                    })
+                    val event by vm.eventToEdit.collectAsState()
 
                     AddEventScreen(
-                        viewModel = scheduleVm,
+                        viewModel = vm,
                         eventToEdit = event,
                         onBack = { bottomNavController.popBackStack() },
                         onSuccess = { bottomNavController.popBackStack() }
@@ -160,11 +164,7 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                 composable(BottomNavItem.Rating.route) {
                     val vm: ReviewViewModel = viewModel(factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            ReviewViewModel(
-                                ReviewRepository(firestoreDataSource),
-                                AuthRepository(firestoreDataSource),
-                                ScheduleRepository(firestoreDataSource)
-                            ) as T
+                            ReviewViewModel(reviewRepo, authRepo, scheduleRepo) as T
                     })
                     RatingScreen(viewModel = vm)
                 }
@@ -172,13 +172,13 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                 composable(BottomNavItem.Notification.route) {
                     val vm: ThongBaoViewModel = viewModel(factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            ThongBaoViewModel(ThongBaoRepository(firestoreDataSource), AuthRepository(firestoreDataSource)) as T
+                            ThongBaoViewModel(thongBaoRepo, authRepo) as T
                     })
                     NotificationScreen(
                         viewModel = vm,
                         onNavigateToPost = { bottomNavController.navigate("post_detail/$it") },
-                        onNavigateToReview = {},
-                        onBack = {}
+                        onNavigateToReview = { /* Điều hướng nếu có màn review detail */ },
+                        onBack = { bottomNavController.popBackStack() }
                     )
                 }
 
@@ -199,7 +199,7 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                 composable("choose_class") {
                     val vm: ScheduleViewModel = viewModel(factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            ScheduleViewModel(ScheduleRepository(firestoreDataSource), AuthRepository(firestoreDataSource)) as T
+                            ScheduleViewModel(scheduleRepo, authRepo) as T
                     })
                     ChooseClassScreen(
                         viewModel = vm,
@@ -216,7 +216,7 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                     val adminForumVm: AdminForumViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AdminForumViewModel(ForumRepository(firestoreDataSource)) as T
+                                return AdminForumViewModel(forumRepo) as T
                             }
                         }
                     )
@@ -227,10 +227,7 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                     val adminViewModel: AdminViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AdminViewModel(
-                                    ScheduleRepository(firestoreDataSource)
-                                    // Nếu AdminViewModel cần thêm repository khác thì bổ sung ở đây
-                                ) as T
+                                return AdminViewModel(scheduleRepo) as T
                             }
                         }
                     )
@@ -241,10 +238,7 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                     val adminReviewVm: AdminReviewViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AdminReviewViewModel(
-                                    ReviewRepository(firestoreDataSource),
-                                    ScheduleRepository(firestoreDataSource)
-                                ) as T
+                                return AdminReviewViewModel(reviewRepo, scheduleRepo) as T
                             }
                         }
                     )
@@ -255,7 +249,7 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                     val adminUserVm: AdminUserViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AdminUserViewModel(AuthRepository(firestoreDataSource)) as T
+                                return AdminUserViewModel(authRepo) as T
                             }
                         }
                     )

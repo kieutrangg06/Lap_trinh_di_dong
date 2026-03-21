@@ -31,7 +31,9 @@ class AdminReviewViewModel(
 
     fun setFilter(status: String) { _filterStatus.value = status }
 
-    fun approveReview(ngayDang: Long) = viewModelScope.launch { reviewRepo.approveReview(ngayDang) }
+    fun approveReview(ngayDang: Long) = viewModelScope.launch {
+        reviewRepo.approveReviewWithNotify(ngayDang)
+    }
     fun hideReview(ngayDang: Long) = viewModelScope.launch { reviewRepo.hideReview(ngayDang) }
     fun deleteReview(ngayDang: Long) = viewModelScope.launch { reviewRepo.deleteReview(ngayDang) }
     
