@@ -82,4 +82,20 @@ class ForumRepository(private val firestore: FirestoreDataSource) {
             true // liked
         }
     }
+
+    fun getAllPostsForAdmin(): Flow<List<Post>> = firestore.getAllPostsForAdmin().map { entities ->
+        entities.map { it.toPost() } // Admin không nhất thiết cần likeCount/isLiked ngay tại bảng danh sách
+    }
+
+    suspend fun approvePost(postId: Long) {
+        firestore.updatePostStatus(postId, "da_duyet")
+    }
+
+    suspend fun hidePost(postId: Long) {
+        firestore.updatePostStatus(postId, "bi_an")
+    }
+
+    suspend fun deletePost(postId: Long) {
+        firestore.deletePost(postId)
+    }
 }

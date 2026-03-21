@@ -47,4 +47,15 @@ class AuthRepository(private val firestore: FirestoreDataSource) {
     suspend fun findUserByUsernameOrEmail(identifier: String): UserEntity? {
         return firestore.findByUsername(identifier) ?: firestore.findByEmail(identifier)
     }
+
+    fun getAllUsersForAdmin(): Flow<List<UserEntity>> = firestore.getAllUsersForAdmin()
+
+    suspend fun toggleUserLock(userId: Long, currentStatus: String) {
+        val newStatus = if (currentStatus == "hoat_dong") "bi_khoa" else "hoat_dong"
+        firestore.updateUserStatus(userId, newStatus)
+    }
+
+    suspend fun deleteUser(userId: Long) {
+        firestore.deleteUser(userId)
+    }
 }

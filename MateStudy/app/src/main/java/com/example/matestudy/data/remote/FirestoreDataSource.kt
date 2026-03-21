@@ -74,6 +74,31 @@ class FirestoreDataSource {
         return snap.documents.firstOrNull()?.toObject(UserEntity::class.java)
     }
 
+    // Lấy toàn bộ danh sách người dùng
+    fun getAllUsersForAdmin(): Flow<List<UserEntity>> = callbackFlow {
+        val listener = db.collection("users")
+            .addSnapshotListener { snap, e ->
+                if (e != null) {
+                    close(e)
+                    return@addSnapshotListener
+                }
+                trySend(snap?.toObjects(UserEntity::class.java) ?: emptyList())
+            }
+        awaitClose { listener.remove() }
+    }
+
+    // Cập nhật trạng thái người dùng (hoat_dong / bi_khoa)
+    suspend fun updateUserStatus(userId: Long, newStatus: String) {
+        db.collection("users").document(userId.toString())
+            .update("trangThai", newStatus)
+            .await()
+    }
+
+    // Xóa người dùng
+    suspend fun deleteUser(userId: Long) {
+        db.collection("users").document(userId.toString()).delete().await()
+    }
+
     // ────────────────────────────────────────────────
     // 2. POST & FORUM - Bài viết, bình luận, lượt thích
     // ────────────────────────────────────────────────
@@ -209,6 +234,42 @@ class FirestoreDataSource {
         awaitClose { listener.remove() }
     }
 
+    // Lấy tất cả bài viết không phân biệt trạng thái (dành cho Admin)
+    fun getAllPostsForAdmin(): Flow<List<PostEntity>> = callbackFlow {
+        val listener = db.collection("bai_viet_dien_dan")
+            .orderBy("ngay_dang", Query.Direction.DESCENDING)
+            .addSnapshotListener { snap, e ->
+                if (e != null) {
+                    close(e)
+                    return@addSnapshotListener
+                }
+                trySend(snap?.toObjects(PostEntity::class.java) ?: emptyList())
+            }
+        awaitClose { listener.remove() }
+    }
+
+    // Cập nhật trạng thái bài viết (Duyệt, Ẩn)
+    suspend fun updatePostStatus(postId: Long, newStatus: String) {
+        db.collection("bai_viet_dien_dan")
+            .document(postId.toString())
+            .update("trang_thai", newStatus)
+            .await()
+    }
+
+    // Xóa bài viết
+    suspend fun deletePost(postId: Long) {
+        db.collection("bai_viet_dien_dan").document(postId.toString()).delete().await()
+
+        // (Tùy chọn) Xóa luôn các comment và like liên quan để sạch DB
+        val comments = db.collection("binh_luan_dien_dan").whereEqualTo("bai_viet_id", postId).get().await()
+        val likes = db.collection("luot_thich_bai_viet").whereEqualTo("bai_viet_id", postId).get().await()
+
+        db.runBatch { batch ->
+            comments.forEach { batch.delete(it.reference) }
+            likes.forEach { batch.delete(it.reference) }
+        }.await()
+    }
+
     // ────────────────────────────────────────────────
     // 3. REVIEW - Đánh giá môn học / giảng viên
     // ────────────────────────────────────────────────
@@ -253,6 +314,42 @@ class FirestoreDataSource {
                 if (e != null) close(e) else trySend(snap?.size() ?: 0)
             }
         awaitClose { listener.remove() }
+    }
+
+    // Lấy tất cả đánh giá (không lọc trạng thái) dành cho Admin
+    fun getAllReviewsForAdmin(): Flow<List<ReviewEntity>> = callbackFlow {
+        val listener = db.collection("danh_gia_mon_giang_vien")
+            .orderBy("ngay_dang", Query.Direction.DESCENDING)
+            .addSnapshotListener { snap, e ->
+                if (e != null) {
+                    close(e)
+                    return@addSnapshotListener
+                }
+                trySend(snap?.toObjects(ReviewEntity::class.java) ?: emptyList())
+            }
+        awaitClose { listener.remove() }
+    }
+
+    // Cập nhật trạng thái đánh giá (da_duyet, bi_an, cho_duyet)
+    suspend fun updateReviewStatus(reviewId: String, newStatus: String) {
+        // Lưu ý: ReviewEntity của bạn dùng ID mặc định của Firestore (String) hoặc Long tùy cách bạn add.
+        // Nếu dùng .add(review), Firestore tự sinh String ID. Ta cần tìm doc đó.
+        val query = db.collection("danh_gia_mon_giang_vien")
+            .whereEqualTo("ngay_dang", reviewId.toLongOrNull() ?: 0L) // Hoặc dùng ID chính xác nếu bạn đã định nghĩa
+            .limit(1)
+            .get()
+            .await()
+
+        query.documents.firstOrNull()?.reference?.update("trang_thai", newStatus)?.await()
+    }
+
+    // Xóa đánh giá
+    suspend fun deleteReview(ngayDang: Long) {
+        val query = db.collection("danh_gia_mon_giang_vien")
+            .whereEqualTo("ngay_dang", ngayDang)
+            .get()
+            .await()
+        query.documents.forEach { it.reference.delete().await() }
     }
 
     // ────────────────────────────────────────────────

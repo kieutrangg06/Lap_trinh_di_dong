@@ -202,9 +202,14 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
             // ────────────────────────────────────────────────────────────────
             if (isAdmin) {
                 composable(BottomNavItem.AdminForum.route) {
-                    // Ví dụ: tạo ViewModel riêng nếu cần
-                    // val forumAdminVm: AdminForumViewModel = viewModel { ... }
-                    // AdminForumScreen(viewModel = forumAdminVm)
+                    val adminForumVm: AdminForumViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return AdminForumViewModel(ForumRepository(firestoreDataSource)) as T
+                            }
+                        }
+                    )
+                    AdminForumScreen(viewModel = adminForumVm)
                 }
 
                 composable(BottomNavItem.AdminStudyData.route) {
@@ -222,13 +227,28 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                 }
 
                 composable(BottomNavItem.AdminRating.route) {
-                    // Tạo ViewModel phù hợp nếu cần
-                    // AdminRatingScreen()
+                    val adminReviewVm: AdminReviewViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return AdminReviewViewModel(
+                                    ReviewRepository(firestoreDataSource),
+                                    ScheduleRepository(firestoreDataSource)
+                                ) as T
+                            }
+                        }
+                    )
+                    AdminRatingScreen(viewModel = adminReviewVm)
                 }
 
                 composable(BottomNavItem.AdminUsers.route) {
-                    // Tạo ViewModel phù hợp nếu cần
-                    // AdminUsersScreen()
+                    val adminUserVm: AdminUserViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return AdminUserViewModel(AuthRepository(firestoreDataSource)) as T
+                            }
+                        }
+                    )
+                    AdminUsersScreen(viewModel = adminUserVm)
                 }
             }
         }
