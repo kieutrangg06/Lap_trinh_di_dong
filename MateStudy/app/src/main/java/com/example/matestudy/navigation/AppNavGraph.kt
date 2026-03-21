@@ -195,6 +195,17 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                         viewModel = authViewModel
                     )
                 }
+
+                composable("choose_class") {
+                    val vm: ScheduleViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            ScheduleViewModel(ScheduleRepository(firestoreDataSource), AuthRepository(firestoreDataSource)) as T
+                    })
+                    ChooseClassScreen(
+                        viewModel = vm,
+                        onBack = { bottomNavController.popBackStack() }
+                    )
+                }
             }
 
             // ────────────────────────────────────────────────────────────────

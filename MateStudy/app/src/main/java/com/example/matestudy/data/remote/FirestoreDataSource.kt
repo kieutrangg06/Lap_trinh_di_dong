@@ -378,8 +378,13 @@ class FirestoreDataSource {
     }
 
     suspend fun getMonHocById(id: Long): MonHocEntity? {
-        return db.collection("mon_hoc").document(id.toString()).get().await()
-            .toObject(MonHocEntity::class.java)
+        return db.collection("mon_hoc")
+            .whereEqualTo("id", id) // Tìm theo field id thay vì Document Name
+            .get()
+            .await()
+            .documents
+            .firstOrNull()
+            ?.toObject(MonHocEntity::class.java)
     }
 
     fun getMonHocByHocKy(hocKyId: Long): Flow<List<MonHocEntity>> = callbackFlow {
