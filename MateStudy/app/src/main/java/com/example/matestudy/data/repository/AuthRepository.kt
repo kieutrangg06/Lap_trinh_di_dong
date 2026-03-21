@@ -6,6 +6,32 @@ import kotlinx.coroutines.flow.Flow
 
 class AuthRepository(private val firestore: FirestoreDataSource) {
 
+    // ────────────────────────────────────────────────
+    // 1. Trạng thái người dùng hiện tại (thường dùng nhất)
+    // ────────────────────────────────────────────────
+
+    fun getCurrentUserFlow(): Flow<UserEntity?> = firestore.getCurrentUserFlow()
+
+    // ────────────────────────────────────────────────
+    // 2. Đăng nhập / Thiết lập phiên
+    // ────────────────────────────────────────────────
+
+    suspend fun loginToSession(user: UserEntity) {
+        firestore.setCurrentSession(user)
+    }
+
+    // ────────────────────────────────────────────────
+    // 3. Đăng xuất
+    // ────────────────────────────────────────────────
+
+    suspend fun logout() {
+        firestore.clearSession()
+    }
+
+    // ────────────────────────────────────────────────
+    // 4. Tạo / Cập nhật thông tin người dùng
+    // ────────────────────────────────────────────────
+
     suspend fun saveUser(user: UserEntity) {
         firestore.saveUser(user)
     }
@@ -14,22 +40,10 @@ class AuthRepository(private val firestore: FirestoreDataSource) {
         firestore.updateUser(user)
     }
 
-    suspend fun clearUserData() {
-        firestore.deleteAllUsers()
-    }
+    // ────────────────────────────────────────────────
+    // 5. Tìm kiếm người dùng (dùng khi đăng ký / đăng nhập)
+    // ────────────────────────────────────────────────
 
-    suspend fun loginToSession(user: UserEntity) {
-        firestore.setCurrentSession(user)
-    }
-
-    // Đăng xuất thì chỉ xóa session
-    suspend fun logout() {
-        firestore.clearSession()
-    }
-
-    fun getCurrentUserFlow(): Flow<UserEntity?> = firestore.getCurrentUserFlow()
-
-    // Tìm user trong DB tổng (không thay đổi)
     suspend fun findUserByUsernameOrEmail(identifier: String): UserEntity? {
         return firestore.findByUsername(identifier) ?: firestore.findByEmail(identifier)
     }

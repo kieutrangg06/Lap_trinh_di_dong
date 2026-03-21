@@ -25,7 +25,6 @@ import com.example.matestudy.ui.viewmodel.AuthViewModel
 fun ProfileScreen(onChangePasswordClick: () -> Unit, viewModel: AuthViewModel) {
     val currentUser by viewModel.currentUser.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
 
     var editedUsername by remember { mutableStateOf(currentUser.tenDangNhap) }
     var editedEmail by remember { mutableStateOf(currentUser.email) }

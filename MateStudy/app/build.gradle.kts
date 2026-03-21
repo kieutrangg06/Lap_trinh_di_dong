@@ -76,6 +76,8 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")   // nếu cần upload ảnh đại diện/file đính kèm
 
+    implementation("androidx.compose.material:material-icons-extended")
+
 // Coil vẫn giữ để load ảnh
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("com.google.firebase:firebase-analytics")

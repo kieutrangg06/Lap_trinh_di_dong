@@ -10,17 +10,6 @@ data class HocKyEntity(
     val ten_hoc_ky: String = ""             // default empty
 )
 
-// lich_ca_nhan
-@Entity(tableName = "lich_ca_nhan")
-data class LichCaNhanEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val sinhVienId: Long = 0,
-    val loai: String = "",
-    val monHocId: Long? = null,
-    val skId: Long? = null,
-    val mauSac: String = "#3788d8"
-)
-
 // mon_hoc
 @Entity(tableName = "mon_hoc")
 data class MonHocEntity(
@@ -34,6 +23,17 @@ data class MonHocEntity(
     val ngayBatDau: String = "",
     val ngayKetThuc: String = "",
     val hocKyId: Long? = null
+)
+
+// lich_ca_nhan
+@Entity(tableName = "lich_ca_nhan")
+data class LichCaNhanEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val sinhVienId: Long = 0,
+    val loai: String = "",
+    val monHocId: Long? = null,
+    val skId: Long? = null,
+    val mauSac: String = "#3788d8"
 )
 
 // sk_ca_nhan

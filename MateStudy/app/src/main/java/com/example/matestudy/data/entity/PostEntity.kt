@@ -3,7 +3,6 @@ package com.example.matestudy.data.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-
 // bai_viet_dien_dan
 @Entity(tableName = "bai_viet_dien_dan")
 data class PostEntity(

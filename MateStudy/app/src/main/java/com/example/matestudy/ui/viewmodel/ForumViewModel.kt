@@ -9,7 +9,6 @@ import com.example.matestudy.data.entity.PostEntity
 import com.example.matestudy.data.repository.AuthRepository
 import com.example.matestudy.data.repository.ForumRepository
 import com.example.matestudy.data.toPost
-import com.example.matestudy.data.toComment
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -18,12 +17,18 @@ class ForumViewModel(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _currentCategory = MutableStateFlow("all")
-    val currentCategory: StateFlow<String> = _currentCategory.asStateFlow()
-
+    // ─────────────────────────────────────────
+    // 1. State cơ bản & User hiện tại
+    // ─────────────────────────────────────────
     private val currentUserId: StateFlow<Long> = authRepository.getCurrentUserFlow()
         .map { it?.id ?: 0L }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
+
+    // ─────────────────────────────────────────
+    // 2. Danh sách bài viết (category + search)
+    // ─────────────────────────────────────────
+    private val _currentCategory = MutableStateFlow("all")
+    val currentCategory: StateFlow<String> = _currentCategory.asStateFlow()
 
     val posts: StateFlow<List<Post>> = combine(_currentCategory, currentUserId) { cat, userId ->
         cat to userId
@@ -46,14 +51,29 @@ class ForumViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // ─────────────────────────────────────────
+    // 3. Chi tiết bài viết & Bình luận
+    // ─────────────────────────────────────────
+    private val _selectedPostId = MutableStateFlow<Long?>(null)
 
+    private val _selectedPost = MutableStateFlow<Post?>(null)
+    val selectedPost: StateFlow<Post?> = _selectedPost.asStateFlow()
 
+    val comments: StateFlow<List<Comment>> = _selectedPostId.flatMapLatest { id ->
+        if (id != null) forumRepository.getCommentsForPost(id)
+        else flowOf(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-
-
+    // ─────────────────────────────────────────
+    // 4. Trạng thái lỗi
+    // ─────────────────────────────────────────
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    // ─────────────────────────────────────────
+    // 5. Các hàm public - UI events
+    // ─────────────────────────────────────────
+    // Category & Search
     fun setCategory(category: String) {
         _currentCategory.value = category
     }
@@ -62,28 +82,18 @@ class ForumViewModel(
         _searchQuery.value = query
     }
 
-    // ForumViewModel.kt
-
-    private val _selectedPostId = MutableStateFlow<Long?>(null)
-
-    // Sử dụng biến post đơn giản để kiểm tra
-    private val _selectedPost = MutableStateFlow<Post?>(null)
-    val selectedPost: StateFlow<Post?> = _selectedPost.asStateFlow()
-
+    // Post detail
     fun loadPostDetail(postId: Long) {
         _selectedPostId.value = postId
         viewModelScope.launch {
             try {
-                // 1. Lấy dữ liệu thô
                 val entity = forumRepository.getPostById(postId)
 
                 if (entity != null) {
-                    // 2. Lấy LikeCount và trạng thái Like (không cần Flow phức tạp ở đây để test trước)
                     val likes = forumRepository.getLikeCount(postId).firstOrNull() ?: 0
                     val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: 0L
                     val isLiked = forumRepository.isPostLiked(postId, userId)
 
-                    // 3. Cập nhật vào State
                     _selectedPost.value = entity.toPost(likes, isLiked)
                 } else {
                     println("DEBUG: Khong tim thay Entity cho ID $postId")
@@ -94,14 +104,7 @@ class ForumViewModel(
         }
     }
 
-    // Quan sát bình luận dựa trên ID
-    val comments: StateFlow<List<Comment>> = _selectedPostId.flatMapLatest { id ->
-        if (id != null) forumRepository.getCommentsForPost(id)
-        else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-
-
+    // Tạo bài viết
     fun createPost(tieuDe: String, noiDung: String, category: String, filePath: String?) {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: 0L
@@ -129,6 +132,7 @@ class ForumViewModel(
         }
     }
 
+    // Bình luận
     fun addComment(postId: Long, noiDung: String) {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: 0L
@@ -148,6 +152,7 @@ class ForumViewModel(
         }
     }
 
+    // Like
     fun toggleLike(postId: Long) {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: 0L
@@ -157,9 +162,5 @@ class ForumViewModel(
             }
             forumRepository.toggleLike(postId, userId)
         }
-    }
-
-    fun clearError() {
-        _error.value = null
     }
 }

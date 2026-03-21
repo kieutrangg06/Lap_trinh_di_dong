@@ -7,7 +7,6 @@ import androidx.room.PrimaryKey
 data class ThongBaoEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-
     val sinhVienId: Long = 0,
     val tieuDe: String = "",
     val noiDung: String = "",

@@ -12,10 +12,14 @@ import com.example.matestudy.data.toComment
 
 class ForumRepository(private val firestore: FirestoreDataSource) {
 
+    // ────────────────────────────────────────────────
+    // 1. Lấy danh sách bài viết (các màn hình chính)
+    // ────────────────────────────────────────────────
+
     fun getAllPosts(userId: Long): Flow<List<Post>> = firestore.getAllPosts().map { posts ->
         posts.map { postEntity ->
             val likeCount = firestore.getLikeCount(postEntity.id).firstOrNull() ?: 0
-            val isLiked = firestore.getLikeByUser(postEntity.id, userId)!= null
+            val isLiked = firestore.getLikeByUser(postEntity.id, userId) != null
             postEntity.toPost(likeCount, isLiked)
         }
     }
@@ -36,7 +40,9 @@ class ForumRepository(private val firestore: FirestoreDataSource) {
         }
     }
 
-    suspend fun createPost(post: PostEntity): Long = firestore.insertPost(post)
+    // ────────────────────────────────────────────────
+    // 2. Chi tiết bài viết & Bình luận
+    // ────────────────────────────────────────────────
 
     suspend fun getPostById(id: Long): PostEntity? = firestore.getPostById(id)
 
@@ -45,11 +51,26 @@ class ForumRepository(private val firestore: FirestoreDataSource) {
             list.map { it.toComment() }
         }
 
+    // ────────────────────────────────────────────────
+    // 3. Tạo mới nội dung (post, comment)
+    // ────────────────────────────────────────────────
+
+    suspend fun createPost(post: PostEntity): Long = firestore.insertPost(post)
+
     suspend fun addComment(comment: CommentEntity) {
         firestore.insertComment(comment)
     }
 
+    // ────────────────────────────────────────────────
+    // 4. Tương tác like
+    // ────────────────────────────────────────────────
+
     fun getLikeCount(postId: Long): Flow<Int> = firestore.getLikeCount(postId)
+
+    suspend fun isPostLiked(postId: Long, userId: Long): Boolean {
+        if (userId == 0L) return false
+        return firestore.getLikeByUser(postId, userId) != null
+    }
 
     suspend fun toggleLike(postId: Long, userId: Long): Boolean {
         val existing = firestore.getLikeByUser(postId, userId)
@@ -60,11 +81,5 @@ class ForumRepository(private val firestore: FirestoreDataSource) {
             firestore.insertLike(LikeEntity(postId, userId))
             true // liked
         }
-    }
-
-    // ForumRepository.kt
-    suspend fun isPostLiked(postId: Long, userId: Long): Boolean {
-        if (userId == 0L) return false
-        return firestore.getLikeByUser(postId, userId) != null
     }
 }

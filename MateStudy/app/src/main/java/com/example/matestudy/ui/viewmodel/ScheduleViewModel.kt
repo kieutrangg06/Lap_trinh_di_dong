@@ -4,45 +4,44 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.matestudy.data.Event
 import com.example.matestudy.data.entity.LichCaNhanEntity
-import com.example.matestudy.data.entity.MonHocEntity
 import com.example.matestudy.data.entity.SkCaNhanEntity
 import com.example.matestudy.data.repository.AuthRepository
 import com.example.matestudy.data.repository.ScheduleRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 class ScheduleViewModel(
     val scheduleRepository: ScheduleRepository,
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _currentWeekStart = MutableStateFlow(LocalDate.now().with(DayOfWeek.MONDAY))
-    val currentWeekStart: StateFlow<LocalDate> = _currentWeekStart.asStateFlow()
-
-    fun changeWeek(offset: Int) {
-        _currentWeekStart.value = _currentWeekStart.value.plusWeeks(offset.toLong())
-    }
+    // ─────────────────────────────────────────
+    // 1. Trạng thái thời gian (tuần / tháng)
+    // ─────────────────────────────────────────
     private val _currentMonth = MutableStateFlow(LocalDate.now())
     val currentMonth: StateFlow<LocalDate> = _currentMonth.asStateFlow()
 
+    // ─────────────────────────────────────────
+    // 2. Trạng thái dữ liệu chính
+    // ─────────────────────────────────────────
     private val _events = MutableStateFlow<List<Event>>(emptyList())
     val events: StateFlow<List<Event>> = _events.asStateFlow()
 
     private val _selectedEvent = MutableStateFlow<Event?>(null)
     val selectedEvent: StateFlow<Event?> = _selectedEvent.asStateFlow()
 
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
-
     private val _eventToEdit = MutableStateFlow<Event?>(null)
     val eventToEdit: StateFlow<Event?> = _eventToEdit.asStateFlow()
 
-    fun setEventToEdit(event: Event?) { _eventToEdit.value = event }
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
 
+    // ─────────────────────────────────────────
+    // 3. Khởi tạo & theo dõi user
+    // ─────────────────────────────────────────
     init {
         viewModelScope.launch {
             authRepository.getCurrentUserFlow().collect { user ->
@@ -53,6 +52,9 @@ class ScheduleViewModel(
         }
     }
 
+    // ─────────────────────────────────────────
+    // 4. Các hàm thay đổi phạm vi thời gian
+    // ─────────────────────────────────────────
     fun changeMonth(delta: Int) {
         _currentMonth.value = _currentMonth.value.plusMonths(delta.toLong())
         viewModelScope.launch {
@@ -61,17 +63,18 @@ class ScheduleViewModel(
         }
     }
 
+    // ─────────────────────────────────────────
+    // 5. Tải & xử lý dữ liệu sự kiện
+    // ─────────────────────────────────────────
     private suspend fun loadEvents(sinhVienId: Long) {
-        // 1. Lấy toàn bộ danh sách lịch từ Repository
         val lichList = scheduleRepository.getLichCaNhan(sinhVienId).firstOrNull() ?: emptyList()
         val eventList = mutableListOf<Event>()
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-        // Bản đồ chuyển đổi Thứ từ DB sang DayOfWeek của hệ thống
         val dayMap = mapOf("2" to 1, "3" to 2, "4" to 3, "5" to 4, "6" to 5, "7" to 6, "CN" to 7)
 
         for (lich in lichList) {
-            // --- XỬ LÝ LỚP HỌC (Giữ nguyên hoặc tối ưu) ---
+            // Lớp học chính thức
             if (lich.loai == "lop_chinh_thuc" && lich.monHocId != null) {
                 val mon = scheduleRepository.getMonHocById(lich.monHocId)
                 mon?.let {
@@ -81,24 +84,27 @@ class ScheduleViewModel(
 
                     while (!tempDate.isAfter(endDate)) {
                         if (tempDate.dayOfWeek.value == thuInt) {
-                            eventList.add(createEventFromLich(lich, it.tenMon, it.diaDiem, tempDate, it.gioBatDau, it.gioKetThuc, it.tenGv))
+                            eventList.add(
+                                createEventFromLich(
+                                    lich, it.tenMon, it.diaDiem, tempDate,
+                                    it.gioBatDau, it.gioKetThuc, it.tenGv
+                                )
+                            )
                         }
                         tempDate = tempDate.plusDays(1)
                     }
                 }
             }
-            // --- XỬ LÝ SỰ KIỆN RIÊNG (Phần quan trọng) ---
+            // Sự kiện cá nhân
             else if (lich.loai == "su_kien_rieng" && lich.skId != null) {
                 val sk = scheduleRepository.getSkById(lich.skId)
                 sk?.let {
                     var tempDate = LocalDate.parse(it.ngayBatDau, formatter)
                     val endDate = LocalDate.parse(it.ngayKetThuc, formatter)
 
-                    // Quan trọng: Nếu không lặp, chỉ add 1 lần rồi thoát
                     if (it.lapLai == "khong" || it.lapLai == null) {
                         eventList.add(createEventFromSk(lich, it, tempDate))
                     } else {
-                        // Nếu có lặp (hàng ngày hoặc hàng tuần)
                         while (!tempDate.isAfter(endDate)) {
                             eventList.add(createEventFromSk(lich, it, tempDate))
 
@@ -113,17 +119,63 @@ class ScheduleViewModel(
             }
         }
 
-        // 2. Cập nhật State Flow (Bỏ bớt filter khắt khe để dễ debug)
+        // Filter theo tháng hiện tại + buffer để hiển thị lịch grid
         val firstOfMonth = _currentMonth.value.withDayOfMonth(1)
         val lastOfMonth = firstOfMonth.plusMonths(1).minusDays(1)
 
-        // Mở rộng phạm vi filter để bao phủ cả các ô trống ở đầu/cuối Grid lịch (42 ô)
         _events.value = eventList.filter {
-            !it.date.isBefore(firstOfMonth.minusDays(7)) && !it.date.isAfter(lastOfMonth.plusDays(7))
+            !it.date.isBefore(firstOfMonth.minusDays(7)) &&
+                    !it.date.isAfter(lastOfMonth.plusDays(7))
         }
     }
 
+    // ─────────────────────────────────────────
+    // 6. Factory tạo Event object
+    // ─────────────────────────────────────────
+    private fun createEventFromLich(
+        lich: LichCaNhanEntity,
+        tenMon: String,
+        diaDiem: String?,
+        date: LocalDate,
+        gioBd: String?,
+        gioKt: String?,
+        tenGv: String?
+    ): Event {
+        return Event(
+            id = lich.id,
+            title = tenMon,
+            location = diaDiem,
+            teacher = tenGv,
+            startTime = gioBd?.let { LocalTime.parse(it) },
+            endTime = gioKt?.let { LocalTime.parse(it) },
+            date = date,
+            color = lich.mauSac ?: "#3788d8",
+            loai = lich.loai,
+            originalId = lich.monHocId ?: 0L
+        )
+    }
 
+    private fun createEventFromSk(
+        lich: LichCaNhanEntity,
+        sk: SkCaNhanEntity,
+        date: LocalDate
+    ): Event {
+        return Event(
+            id = lich.id,
+            title = sk.tieuDe,
+            location = sk.diaDiem,
+            startTime = sk.gioBatDau?.let { LocalTime.parse(it) },
+            endTime = sk.gioKetThuc?.let { LocalTime.parse(it) },
+            date = date,
+            color = lich.mauSac ?: "#3788d8",
+            loai = lich.loai,
+            originalId = sk.id
+        )
+    }
+
+    // ─────────────────────────────────────────
+    // 7. Các hàm tương tác UI (public)
+    // ─────────────────────────────────────────
     fun selectEvent(event: Event) {
         _selectedEvent.value = event
     }
@@ -184,61 +236,9 @@ class ScheduleViewModel(
         loadEvents(userId)
     }
 
-    suspend fun deleteEvent(event: Event) {
-        val lich = scheduleRepository.getLichById(event.id) ?: return
-        scheduleRepository.deleteLich(lich)
-
-        if (event.loai == "su_kien_rieng") {
-            val sk = scheduleRepository.getSkById(event.originalId)
-            sk?.let { scheduleRepository.deleteSk(it) }
-        }
-
-        loadEvents(lich.sinhVienId)
-    }
-
-    // Thêm các hàm này vào cuối class ScheduleViewModel
-
-    private fun createEventFromSk(lich: LichCaNhanEntity, sk: SkCaNhanEntity, date: LocalDate): Event {
-        return Event(
-            id = lich.id, // ID của dòng trong bảng LichCaNhan
-            title = sk.tieuDe,
-            location = sk.diaDiem,
-            startTime = sk.gioBatDau?.let { LocalTime.parse(it) },
-            endTime = sk.gioKetThuc?.let { LocalTime.parse(it) },
-            date = date,
-            color = lich.mauSac ?: "#3788d8",
-            loai = lich.loai,
-            originalId = sk.id // ID của sự kiện gốc trong bảng SkCaNhan
-        )
-    }
-
-    private fun createEventFromLich(
-        lich: LichCaNhanEntity,
-        tenMon: String,
-        diaDiem: String?,
-        date: LocalDate,
-        gioBd: String?,
-        gioKt: String?,
-        tenGv: String?
-    ): Event {
-        return Event(
-            id = lich.id,
-            title = tenMon,
-            location = diaDiem,
-            teacher = tenGv,
-            startTime = gioBd?.let { LocalTime.parse(it) },
-            endTime = gioKt?.let { LocalTime.parse(it) },
-            date = date,
-            color = lich.mauSac ?: "#3788d8",
-            loai = lich.loai,
-            originalId = lich.monHocId ?: 0L
-        )
-    }
-
-    // Thêm vào class ScheduleViewModel
     suspend fun updateEvent(
-        eventId: Long, // ID của LichCaNhan
-        originalId: Long, // ID của SkCaNhan
+        eventId: Long,
+        originalId: Long,
         tieuDe: String,
         diaDiem: String?,
         thu: String?,
@@ -251,7 +251,6 @@ class ScheduleViewModel(
     ) {
         val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: return
 
-        // 1. Cập nhật thông tin sự kiện gốc
         val sk = SkCaNhanEntity(
             id = originalId,
             sinhVienId = userId,
@@ -266,12 +265,23 @@ class ScheduleViewModel(
         )
         scheduleRepository.updateSk(sk)
 
-        // 2. Cập nhật màu sắc trong bảng lịch
         val lich = scheduleRepository.getLichById(eventId)
         lich?.let {
             scheduleRepository.updateLich(it.copy(mauSac = color))
         }
 
         loadEvents(userId)
+    }
+
+    suspend fun deleteEvent(event: Event) {
+        val lich = scheduleRepository.getLichById(event.id) ?: return
+        scheduleRepository.deleteLich(lich)
+
+        if (event.loai == "su_kien_rieng") {
+            val sk = scheduleRepository.getSkById(event.originalId)
+            sk?.let { scheduleRepository.deleteSk(it) }
+        }
+
+        loadEvents(lich.sinhVienId)
     }
 }

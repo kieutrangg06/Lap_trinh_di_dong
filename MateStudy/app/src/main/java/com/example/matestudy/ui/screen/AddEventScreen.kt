@@ -1,4 +1,3 @@
-// AddEventScreen.kt (sửa)
 package com.example.matestudy.ui.screen
 
 import androidx.compose.foundation.background
@@ -23,19 +22,16 @@ import com.example.matestudy.ui.viewmodel.ScheduleViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.matestudy.data.Event
 import com.example.matestudy.ui.theme.PrimaryPink
 import com.example.matestudy.ui.theme.TextPrimary
-import com.example.matestudy.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-// AddEventScreen.kt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEventScreen(
@@ -229,18 +225,4 @@ fun RepeatOption(text: String, isSelected: Boolean, onClick: () -> Unit) {
         label = { Text(text) },
         colors = FilterChipDefaults.filterChipColors(selectedContainerColor = PrimaryPink, selectedLabelColor = Color.White)
     )
-}
-
-@Composable
-private fun AddEventDetailRow(icon: ImageVector, text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = TextSecondary
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(text, style = MaterialTheme.typography.bodyMedium)
-    }
 }
