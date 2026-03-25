@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1082343573431",
+    "project_id": "createrealtime-7fc81",
+    "storage_bucket": "createrealtime-7fc81.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082343573431:android:33b8bf7d6912e284b34a32",
+        "android_client_info": {
+          "package_name": "com.example.createrealtime"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDtIaf4w_ehIjN3S8HNTKMKRj5kc2XgkXs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
