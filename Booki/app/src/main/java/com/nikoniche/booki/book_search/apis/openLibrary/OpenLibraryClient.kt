@@ -1,5 +1,6 @@
 package com.nikoniche.booki.book_search.apis.openLibrary
 
+import OpenLibraryService
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory

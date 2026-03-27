@@ -31,7 +31,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,18 +47,12 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.nikoniche.booki.Book
 import com.nikoniche.booki.R
 import com.nikoniche.booki.architecture.navigation.Screen
-import com.nikoniche.booki.book_search.apis.openLibrary.OpenLibrary
 import com.nikoniche.booki.personalData.PersonalRecordsViewModel
-import com.nikoniche.booki.personalData.local_database.Graph
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 
 data class TextFieldState(

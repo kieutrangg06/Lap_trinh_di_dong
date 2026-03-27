@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.nikoniche.booki", appContext.packageName)
+        assertEquals("com.example.booki", appContext.packageName)
     }
 }

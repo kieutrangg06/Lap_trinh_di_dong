@@ -1,5 +1,3 @@
-package com.nikoniche.booki.book_search.apis.openLibrary
-
 data class OpenLibraryResponse(
     val records: Map<String, BookRecord>,
     val items: List<Any> // Assuming `items` is always an empty list or an array of unknown type
