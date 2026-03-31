@@ -3,27 +3,11 @@ package com.nikoniche.booki.book_search
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,19 +44,19 @@ fun SearchResultsView(
         if (!searchViewModel.search.value.searching) {
             if(searchViewModel.search.value.result.isNotEmpty()) {
                 LazyColumn {
-                    items(searchViewModel.search.value.result) {
-                        foundBook ->
+                    items(searchViewModel.search.value.result) { foundBook ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .wrapContentHeight()
                                 .padding(bottom = 12.dp)
                                 .clickable {
+                                    // SỬA TẠI ĐÂY: Dùng displayISBN thay cho getISBN()
                                     navHostController.navigate(
-                                        Screen.BookDetailsScreen.route + "/isbn/${foundBook.getISBN()}"
+                                        Screen.BookDetailsScreen.route + "/isbn/${foundBook.displayISBN}"
                                     )
                                 },
-                            elevation=CardDefaults.cardElevation(2.dp),
+                            elevation = CardDefaults.cardElevation(2.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = Color.White,
                             ),
@@ -80,29 +64,29 @@ fun SearchResultsView(
                             Row {
                                 Image(
                                     painter = foundBook.getCoverPainter(),
-                                    contentDescription="cover of the book",
+                                    contentDescription = "cover of the book",
                                     contentScale = ContentScale.Fit,
                                     modifier = Modifier
                                         .width(80.dp)
                                         .height(100.dp)
-//                                        .padding(8.dp)
                                 )
                                 Column {
                                     Text(
-                                        text=foundBook.title,
+                                        text = foundBook.title,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(top = 4.dp),
-                                        fontSize=21.sp,
-                                        fontWeight= FontWeight.Bold,
+                                            .padding(top = 4.dp, start = 8.dp),
+                                        fontSize = 21.sp,
+                                        fontWeight = FontWeight.Bold,
                                         textAlign = TextAlign.Start,
                                     )
+                                    // SỬA TẠI ĐÂY: Dùng authorsText thay cho getAuthors()
                                     Text(
-                                        text=foundBook.getAuthors(),
+                                        text = foundBook.authorsText,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(top = 2.dp),
-                                        fontSize=17.sp,
+                                            .padding(top = 2.dp, start = 8.dp),
+                                        fontSize = 17.sp,
                                         fontStyle = FontStyle.Italic,
                                         textAlign = TextAlign.Start,
                                     )
@@ -120,8 +104,8 @@ fun SearchResultsView(
                         .padding(vertical = 20.dp),
                 ) {
                     Text(
-                        text="No book was found",
-                        fontSize=21.sp,
+                        text = "No book was found",
+                        fontSize = 21.sp,
                         fontStyle = FontStyle.Italic,
                     )
                 }
@@ -133,16 +117,15 @@ fun SearchResultsView(
                     .fillMaxWidth()
                     .wrapContentHeight()
                     .padding(vertical = 20.dp),
-            )
-            {
+            ) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(50.dp),
-                    color = Color.Black,
-                    backgroundColor = Color.LightGray,
+                    color = Color.Black
                 )
             }
         }
 
+        // Phần gợi ý thêm thủ công nếu không tìm thấy
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -150,34 +133,33 @@ fun SearchResultsView(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            MyDivider(Modifier.padding(vertical=8.dp))
+            MyDivider(Modifier.padding(vertical = 8.dp))
             Text(
-                text="Haven't found your book?",
-                fontSize=21.sp,
+                text = "Haven't found your book?",
+                fontSize = 21.sp,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(Modifier.height(8.dp))
             Button(
-                colors = ButtonDefaults
-                    .buttonColors(
-                        containerColor=Color.White,
-                        contentColor=Color.Black
-                    ),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color.Black
+                ),
                 border = BorderStroke(2.5.dp, Color.Black),
-                modifier = Modifier.height(30.dp),
+                modifier = Modifier.height(35.dp),
                 shape = ButtonDefaults.filledTonalShape,
-                contentPadding = PaddingValues(horizontal=10.dp, vertical=1.dp),
-                onClick={
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                onClick = {
                     navHostController.navigate(Screen.AddBookManuallyScreen.route)
                 }
             ) {
-                Text("Add manually", color=Color.Black, fontSize=16.sp)
+                Text("Add manually", color = Color.Black, fontSize = 16.sp)
             }
         }
     }
 }
 
-@Preview(showBackground=true)
+@Preview(showBackground = true)
 @Composable
 fun SearchResultsViewPreview() {
     SearchResultsView(

@@ -8,14 +8,13 @@ import androidx.lifecycle.viewModelScope
 import com.nikoniche.booki.Book
 import com.nikoniche.booki.PersonalBook
 import com.nikoniche.booki.Status
-import com.nikoniche.booki.personalData.local_database.Graph
-import com.nikoniche.booki.personalData.local_database.PersonalBookRepository
+import com.nikoniche.booki.personalData.local_database.DataGraph
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class PersonalRecordsViewModel: ViewModel() {
-    private val personalBookRepository: PersonalBookRepository = Graph.personalBookRepository
+class PersonalRecordsViewModel : ViewModel() {
+    private val repo = DataGraph.firebaseRepository
 
     private val _books: MutableState<List<PersonalBook>> = mutableStateOf(emptyList())
     val books: State<List<PersonalBook>> = _books
@@ -26,67 +25,72 @@ class PersonalRecordsViewModel: ViewModel() {
         refreshBooks()
     }
 
-    private fun refreshBooks() {
+    /**
+     * Tải lại danh sách sách từ Firebase
+     */
+    fun refreshBooks() {
         viewModelScope.launch(Dispatchers.IO) {
-            val listOfSavedBooks = personalBookRepository.getPersonalBooks()
+            try {
+                val fetchedBooks = repo.getPersonalBooks()
+                withContext(Dispatchers.Main) {
+                    _books.value = fetchedBooks
 
-            withContext(Dispatchers.Main) {
-                _books.value = listOfSavedBooks
-
-                // Check if viewedPersonalBook still exists
-                val foundViewedBook = listOfSavedBooks.any { it == viewedPersonalBook.value }
-                if (!foundViewedBook) {
-                    viewedPersonalBook.value = null
+                    // Cập nhật lại đối tượng đang xem nếu nó tồn tại trong danh sách mới load về
+                    viewedPersonalBook.value?.let { current ->
+                        viewedPersonalBook.value = fetchedBooks.find { it.id == current.id }
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
-
+    /**
+     * Thêm sách mới vào Personal Books trên Firebase
+     */
     fun addBook(personalBook: PersonalBook) {
         viewModelScope.launch(Dispatchers.IO) {
-            personalBookRepository.addPersonalBook(personalBook)
-            refreshBooks()
+            repo.addPersonalBook(personalBook)
+            refreshBooks() // Gọi load lại để UI cập nhật ngay lập tức
         }
     }
+
+    /**
+     * Cập nhật thông tin sách (trạng thái, số trang đã đọc, ghi chú...)
+     */
     fun updateBook(personalBook: PersonalBook) {
         viewModelScope.launch(Dispatchers.IO) {
-            personalBookRepository.updatePersonalBook(personalBook)
+            // Firebase dùng setValue tại ID cũ sẽ tự động ghi đè (update)
+            repo.addPersonalBook(personalBook)
             refreshBooks()
-//            viewedPersonalBook.value = personalBook
         }
     }
-    fun removeBook(
-        personalBook: PersonalBook
-    ) {
+
+    /**
+     * Xóa sách khỏi Personal Books
+     */
+    fun removeBook(personalBook: PersonalBook) {
         viewModelScope.launch(Dispatchers.IO) {
-            personalBookRepository.deletePersonalBook(personalBook)
+            repo.deletePersonalBook(personalBook)
             refreshBooks()
         }
     }
 
+    /**
+     * Tìm kiếm sách trong danh sách cá nhân dựa trên object Book
+     */
     fun setViewedBookByBook(book: Book) {
-        var hasBook = false
-        _books.value.forEach {
-            personalBook ->
-            if (personalBook.book.getISBN() == book.getISBN()) {
-                viewedPersonalBook.value = personalBook
-                hasBook = true
-            }
-        }
-        if (!hasBook) viewedPersonalBook.value = null
+        // SỬA TẠI ĐÂY: Dùng displayISBN thay cho getISBN()
+        val found = _books.value.find { it.book.displayISBN == book.displayISBN }
+        viewedPersonalBook.value = found
     }
 
-    fun getBooks(status: Status?=null): List<PersonalBook> {
-        // null status to allow for getting books of all types
+    /**
+     * Lọc sách theo trạng thái (Reading, Finished, v.v.)
+     */
+    fun getBooks(status: Status? = null): List<PersonalBook> {
         return if (status == null) _books.value
-        else {
-            val matchingBooks: MutableList<PersonalBook> = mutableListOf()
-            _books.value.forEach {
-                    book ->
-                if (book.status == status) matchingBooks.add(book)
-            }
-            matchingBooks
-        }
+        else _books.value.filter { it.status == status }
     }
 }

@@ -2,17 +2,7 @@ package com.nikoniche.booki.personalData
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.Text
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -34,21 +24,22 @@ import com.nikoniche.booki.book_search.SearchViewModel
 @Composable
 fun PersonalBookCard(
     personalBook: PersonalBook,
-    showPageProgress: Boolean=false,
-    showReadingStatus: Boolean=false,
-    showRating: Boolean=false,
-    navHostController: NavHostController, // for quick accessing book details
+    showPageProgress: Boolean = false,
+    showReadingStatus: Boolean = false,
+    showRating: Boolean = false,
+    navHostController: NavHostController, // để truy cập nhanh chi tiết sách
     searchViewModel: SearchViewModel,
-)
-{
+) {
     Box(
         modifier = Modifier
             .width(150.dp)
             .wrapContentHeight()
             .padding(end = 9.dp)
             .clickable {
-                searchViewModel.fetchSearchResults(personalBook.book.getISBN() ?: "")
-                navHostController.navigate(Screen.BookDetailsScreen.route + "/isbn/${personalBook.book.getISBN()}")
+                // SỬA TẠI ĐÂY: Dùng displayISBN thay cho getISBN()
+                val isbn = personalBook.book.displayISBN
+                searchViewModel.fetchSearchResults(isbn)
+                navHostController.navigate(Screen.BookDetailsScreen.route + "/isbn/$isbn")
             },
     ) {
         Column(
@@ -63,40 +54,45 @@ fun PersonalBookCard(
                 contentDescription = null,
                 modifier = Modifier
                     .width(95.dp)
-                    .height(90.dp)
+                    .height(110.dp) // Tăng nhẹ chiều cao để ảnh bìa cân đối hơn
             )
             Spacer(Modifier.height(10.dp))
 
             val textSpacerHeight: Dp = 2.dp
             Text(
-                text=personalBook.book.title,
+                text = personalBook.book.title,
                 textAlign = TextAlign.Center,
-                fontWeight= FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2 // Tránh text quá dài làm vỡ layout
             )
             Spacer(Modifier.height(textSpacerHeight))
+
+            // SỬA TẠI ĐÂY: Dùng authorsText thay cho getAuthors()
             Text(
-                text=personalBook.book.getAuthors(),
+                text = personalBook.book.authorsText,
                 textAlign = TextAlign.Center,
-                fontWeight= FontWeight.Light,
-                fontSize=12.sp
+                fontWeight = FontWeight.Light,
+                fontSize = 12.sp,
+                maxLines = 1
             )
 
-            if(showReadingStatus) {
+            if (showReadingStatus) {
                 Spacer(Modifier.height(textSpacerHeight))
                 Text(
-                    text=personalBook.status.inText,
+                    text = personalBook.status.inText,
                     textAlign = TextAlign.Center,
-                    color=personalBook.status.color,
+                    // Gọi thuộc tính color của Enum Status
+                    color = personalBook.status.color,
                 )
             }
 
-            if(showPageProgress) {
+            if (showPageProgress) {
                 Spacer(Modifier.height(textSpacerHeight))
                 Text(
-                    text="${personalBook.readPages}/${personalBook.book.numberOfPages}",
+                    text = "${personalBook.readPages}/${personalBook.book.numberOfPages}",
                     textAlign = TextAlign.Center,
-                    color= Color.Gray,
-                    fontSize=10.sp
+                    color = Color.Gray,
+                    fontSize = 10.sp
                 )
             }
 
@@ -109,34 +105,35 @@ fun PersonalBookCard(
 }
 
 @Composable
-fun StarRating(personalBook: PersonalBook, starSize: Dp =16.dp) {
-    val amountOfFullStars: Int = personalBook.rating.div(2)
-    val halfStar: Int = personalBook.rating.mod(2)
+fun StarRating(personalBook: PersonalBook, starSize: Dp = 16.dp) {
+    // Rating 1-10 chia 2 để ra 5 sao
+    val amountOfFullStars: Int = personalBook.rating / 2
+    val halfStar: Int = personalBook.rating % 2
 
     Row {
         for (i in 0 until amountOfFullStars) {
             Icon(
-                painter= painterResource(id = R.drawable.star),
-                contentDescription ="full star",
-                tint= Color.Unspecified,
+                painter = painterResource(id = R.drawable.star),
+                contentDescription = "full star",
+                tint = Color.Unspecified,
                 modifier = Modifier.size(starSize)
             )
         }
 
         if (halfStar == 1) {
             Icon(
-                painter= painterResource(id = R.drawable.half_star),
-                contentDescription ="half star",
-                tint= Color.Unspecified,
+                painter = painterResource(id = R.drawable.half_star),
+                contentDescription = "half star",
+                tint = Color.Unspecified,
                 modifier = Modifier.size(starSize)
             )
         }
 
-        for (i in 0 until 5-amountOfFullStars-halfStar) {
+        for (i in 0 until (5 - amountOfFullStars - halfStar)) {
             Icon(
-                painter= painterResource(id = R.drawable.empty_star),
-                contentDescription ="empty star",
-                tint= Color.Unspecified,
+                painter = painterResource(id = R.drawable.empty_star),
+                contentDescription = "empty star",
+                tint = Color.Unspecified,
                 modifier = Modifier.size(starSize)
             )
         }

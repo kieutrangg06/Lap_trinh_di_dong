@@ -28,8 +28,9 @@ fun BookDetailsView(
     if(!searchViewModel.search.value.searching) {
         var foundBook: Book? = null
         searchViewModel.search.value.result.forEach {
-            book ->
-            if(book.getISBN() == bookIsbn) {
+                book ->
+            // SỬA TẠI ĐÂY: Thay getISBN() bằng displayISBN
+            if(book.displayISBN == bookIsbn) {
                 foundBook = book
             }
         }
@@ -62,7 +63,7 @@ fun BookDetailsView(
             CircularProgressIndicator(
                 modifier = Modifier.size(50.dp),
                 color = Color.Black,
-                backgroundColor = Color.LightGray,
+                // backgroundColor = Color.LightGray // CircularProgressIndicator của Material3 dùng trackColor
             )
         }
     }

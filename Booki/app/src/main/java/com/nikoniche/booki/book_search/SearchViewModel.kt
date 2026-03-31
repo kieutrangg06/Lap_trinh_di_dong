@@ -6,37 +6,40 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nikoniche.booki.Book
 import com.nikoniche.booki.book_search.apis.openLibrary.OpenLibrary
-import com.nikoniche.booki.personalData.local_database.Graph
+import com.nikoniche.booki.personalData.local_database.DataGraph
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class SearchViewModel: ViewModel() {
+class SearchViewModel : ViewModel() {
     data class Search(
-        var searching: Boolean = true,
-        var result: MutableList<Book> = mutableListOf(),
-        var error: String="",
+        val searching: Boolean = true,
+        val result: List<Book> = emptyList(), // Sử dụng List thay cho MutableList để quản lý State tốt hơn
+        val error: String = "",
     )
 
-    private val userBookRepository = Graph.userBookRepository
+    private val firebaseRepository = DataGraph.firebaseRepository
 
     private val _search = mutableStateOf(Search())
     val search: State<Search> = _search
 
     private fun extendResultsList(listToAdd: List<Book>) {
-        val extendedList = _search.value.result
-        extendedList.addAll(listToAdd)
+        // Tạo một danh sách mới kết hợp kết quả hiện tại và kết quả mới
+        val currentList = _search.value.result.toMutableList()
+        currentList.addAll(listToAdd)
+
         _search.value = _search.value.copy(
-            result=extendedList
+            result = currentList.toList()
         )
     }
 
     fun fetchSearchResults(query: String) {
-        // notify the UI that the search is ongoing
-        _search.value = Search()
+        // Reset trạng thái về ban đầu khi bắt đầu tìm kiếm mới
+        _search.value = Search(searching = true, result = emptyList(), error = "")
 
-        // determining whether or not the query was an ISBN
         val queryAsIsbnString = query.replace("-", "").replace(" ", "").trim()
         var searchByISBN = false
+
         if (queryAsIsbnString.length == 10 || queryAsIsbnString.length == 13) {
             if (queryAsIsbnString.toLongOrNull() != null) {
                 searchByISBN = true
@@ -44,51 +47,46 @@ class SearchViewModel: ViewModel() {
         }
 
         if (searchByISBN) {
-            // search by isbn
             viewModelScope.launch(Dispatchers.IO) {
                 try {
-                    extendResultsList(
-                        OpenLibrary.getBookByISBN(queryAsIsbnString)
-                    )
-
-                    // disabled search from google books since they would charge
-//                    extendResultsList(
-//                        GoogleBooks.getBookByISBN(queryAsIsbnString)
-//                    )
-
-                    // search user books
-                    val userBooks = userBookRepository.getUserBooks()
-
-                    val matchingUserBooks: MutableList<Book> = mutableListOf()
-                    userBooks.forEach {
-                        if (it.getISBN() == queryAsIsbnString) {
-                            matchingUserBooks.add(it)
-                        }
+                    // 1. Lấy dữ liệu từ OpenLibrary API
+                    val apiResults = OpenLibrary.getBookByISBN(queryAsIsbnString)
+                    withContext(Dispatchers.Main) {
+                        extendResultsList(apiResults)
                     }
-                    extendResultsList(
-                        matchingUserBooks
-                    )
+
+                    // 2. Lấy dữ liệu từ Firebase cá nhân
+                    val userBooks = firebaseRepository.getUserBooks()
+
+                    // SỬA TẠI ĐÂY: Dùng displayISBN thay vì getISBN()
+                    val matchingUserBooks = userBooks.filter { it.displayISBN == queryAsIsbnString }
+
+                    withContext(Dispatchers.Main) {
+                        extendResultsList(matchingUserBooks)
+                    }
+
                 } catch (e: Exception) {
-                    // failed
-                    _search.value = _search.value.copy(
-                        error="error: ${e}, message: ${e.message ?: "null message"}",
-                    )
+                    withContext(Dispatchers.Main) {
+                        _search.value = _search.value.copy(
+                            error = "Error: ${e.message ?: "Unknown error"}"
+                        )
+                    }
                 } finally {
-                    _search.value = _search.value.copy(
-                        searching=false,
-                    )
+                    withContext(Dispatchers.Main) {
+                        _search.value = _search.value.copy(searching = false)
+                    }
                 }
             }
         } else {
-            println("Not searchign by ISBN")
+            _search.value = _search.value.copy(searching = false)
+            println("Not searching by ISBN")
         }
     }
 
     fun fetchUserBook(userBook: Book) {
-        _search.value = Search()
-        _search.value = _search.value.copy(
-            result=mutableListOf(userBook),
-            searching = false,
+        _search.value = Search(
+            result = listOf(userBook),
+            searching = false
         )
     }
 }

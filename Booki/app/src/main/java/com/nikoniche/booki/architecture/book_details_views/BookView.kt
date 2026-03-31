@@ -4,36 +4,15 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -75,8 +54,7 @@ fun BookView(
 
         personalRecordsViewModel.setViewedBookByBook(book)
         var bookStatusState by remember {
-            mutableStateOf(personalRecordsViewModel.viewedPersonalBook.value?.status) // null status state means
-            // that its not added to users personal books
+            mutableStateOf(personalRecordsViewModel.viewedPersonalBook.value?.status)
         }
 
         // personal data
@@ -139,21 +117,18 @@ fun BookView(
                                         personalRecordsViewModel.addBook(
                                             com.nikoniche.booki.PersonalBook(
                                                 book = book,
-                                                status = status, // assuming we arent trying to delete non-existent book
+                                                status = status,
                                                 readPages = if (status == com.nikoniche.booki.Status.Finished) book.numberOfPages else 0
                                             )
                                         )
                                     } else {
-                                        when (status) {
-                                            null -> personalRecordsViewModel.removeBook(
-                                                personalRecordsViewModel.viewedPersonalBook.value!!
-                                            )
-                                            else -> personalRecordsViewModel.viewedPersonalBook.value!!.status = status
-                                        }
+                                        val currentBook = personalRecordsViewModel.viewedPersonalBook.value!!
+                                        currentBook.status = status
+
                                         if (status == com.nikoniche.booki.Status.Finished) {
-                                            personalRecordsViewModel.viewedPersonalBook.value!!.readPages = personalRecordsViewModel.viewedPersonalBook.value!!.book.numberOfPages
+                                            currentBook.readPages = currentBook.book.numberOfPages
                                         }
-                                        personalRecordsViewModel.updateBook(personalRecordsViewModel.viewedPersonalBook.value!!)
+                                        personalRecordsViewModel.updateBook(currentBook)
                                     }
                                     bookStatusState = status
                                     dropDownMenuExpandedState = false
@@ -179,7 +154,6 @@ fun BookView(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
 
-                    // navigation button to update screen for user created books
                     if(book.source == "User") {
                         IconButton(
                             modifier = Modifier
@@ -197,7 +171,6 @@ fun BookView(
                         }
                     }
 
-                    // deleting a book from personal books
                     if (personalRecordsViewModel.viewedPersonalBook.value != null) {
                         if(bookStatusState != null) {
                             IconButton(
@@ -237,7 +210,6 @@ fun BookView(
 fun GenericBookData(
     book: com.nikoniche.booki.Book,
 ) {
-    // universal slash public book data
     Column(
         modifier = Modifier
             .wrapContentSize()
@@ -246,7 +218,6 @@ fun GenericBookData(
     ) {
         Image(
             painter = book.getCoverPainter(),
-//            painter=painterResource(R.drawable.nineteen_eighty_four),
             contentDescription = "book cover",
             contentScale = ContentScale.Fit,
             modifier = Modifier
@@ -256,7 +227,7 @@ fun GenericBookData(
         )
 
         Text(
-            text =book.title,
+            text = book.title,
             fontWeight= FontWeight.Bold,
             fontSize = 21.sp,
         )
@@ -268,16 +239,20 @@ fun GenericBookData(
                 fontSize =17.sp,
             )
         }
+
+        // SỬA TẠI ĐÂY: Dùng authorsText thay cho getAuthors()
         Text(
-            text=book.getAuthors(),
+            text=book.authorsText,
             fontStyle= FontStyle.Italic,
             fontSize=16.sp,
         )
 
         Spacer(Modifier.height(4.dp))
+
+        // SỬA TẠI ĐÂY: Dùng displayISBN thay cho getISBN()
         val detailsText: String = "" +
                 "${book.numberOfPages} pages\n" +
-                "ISBN: ${book.getISBN()}\n" +
+                "ISBN: ${book.displayISBN}\n" +
                 (if (book.publisher != "") "publisher: ${book.publisher}\n" else "") +
                 (if (book.publishDate != "") "published: ${book.publishDate}\n" else "") +
                 (if (book.language != "") "language: ${book.language}\n" else "")
@@ -286,53 +261,5 @@ fun GenericBookData(
             fontSize=13.sp,
             color= Color.Gray
         )
-
-//        if (book.genres.isNotEmpty()) {
-//            LazyVerticalGrid(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .height(50.dp),
-//                columns = GridCells.Fixed(4),
-//                horizontalArrangement = Arrangement.spacedBy(4.dp),  // Space between columns
-//                verticalArrangement = Arrangement.spacedBy(4.dp),
-//                contentPadding = PaddingValues(horizontal = 8.dp)
-//            ) {
-//                items(book.genres) {
-//                    Box(
-//                        modifier = Modifier
-//                            .border(1.dp, Color.Black, RoundedCornerShape(5.dp))
-//                            .height(20.dp)
-//                            .width(40.dp),
-//                        contentAlignment = Alignment.Center,
-//                    ) {
-//                        Text(
-//                            text=it,
-//                            fontWeight = FontWeight.Light,
-//                            fontSize = 13.sp,
-//                            maxLines = 1,                             // Ensure text does not wrap to the next line
-//                            overflow = TextOverflow.Ellipsis,
-//                        )
-//                    }
-//                }
-//            }
-//        }
     }
-}
-
-@Preview(showBackground=true)
-@Composable
-fun GenericBookDataPreview() {
-    GenericBookData(book = com.nikoniche.booki.Book(
-        title = "Testing title",
-        authors = listOf("Kafka", "Orwell"),
-        subtitle = "THERE is but one truly serious philosophical problem and that is the queistion of suicide",
-        isbn10 = "9879999999999",
-        numberOfPages = 201,
-        publisher = "ARTUR",
-        publishDate = "14. 2. 2004",
-        language = "English",
-        genres = listOf("Fantasy", "Drama", "Romance", "Drama", "Romance", "Drama", "Romance"),
-        source = "User",
-    )
-    )
 }

@@ -9,62 +9,53 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.nikoniche.booki.architecture.book_details_views.createImageLoader
 import com.google.gson.Gson
+import com.google.firebase.database.Exclude
+import com.google.firebase.database.IgnoreExtraProperties
 
+@IgnoreExtraProperties
 class Book(
-    var id: Long=-1L, // for user books, do not need to care with API books
-
-    var title: String,
+    var id: Long = -1L,
+    var title: String = "",
     var authors: List<String> = emptyList(),
-    var numberOfPages: Int,
-    var publishDate: String="",
-    var isbn10: String="",
-    var isbn13: String="",
-    val coverUrl: String="",
-
-    var subtitle: String="",
-    val description: String="",
-    var publisher: String="",
-    val genres: List<String> = emptyList(),
-    val language: String="",
-    val source: String="", // OpenLibrary, User
+    var numberOfPages: Int = 0,
+    var publishDate: String = "",
+    var isbn10: String = "",
+    var isbn13: String = "",
+    var coverUrl: String = "",
+    var subtitle: String = "",
+    var description: String = "",
+    var publisher: String = "",
+    var genres: List<String> = emptyList(),
+    var language: String = "",
+    var source: String = "" // "OpenLibrary" hoặc "User"
 ) {
-    fun getISBN(): String {
-        return if (isbn10 != "") {
-            isbn10
-        } else if (isbn13 != "") {
-            isbn13
-        } else {
-            ""
-        }
-    }
+    // Constructor mặc định bắt buộc cho Firebase
+    constructor() : this(-1L, "", emptyList(), 0)
 
-    fun textify(): String {
-        return Gson().toJson(this)
-    }
+    // Lấy ISBN khả dụng (Firebase sẽ bỏ qua thuộc tính này)
+    @get:Exclude
+    val displayISBN: String
+        get() = if (isbn10.isNotEmpty()) isbn10 else if (isbn13.isNotEmpty()) isbn13 else ""
 
-    fun getAuthors(): String {
-        var text = ""
-        this.authors.forEach {
-            text += "$it, "
-        }
-        try {
-            return text.substring(0, text.length - 2)
-        }
-        catch (e: Exception) {
-            return "AUTHOR ERROR"
-        }
-    }
+    // Chuyển đối tượng sang JSON (Firebase sẽ bỏ qua hàm này)
+    @Exclude
+    fun textify(): String = Gson().toJson(this)
 
+    // Chuyển List Authors thành String để hiển thị (Sửa lỗi Conflicting Getters)
+    @get:Exclude
+    val authorsText: String
+        get() {
+            if (authors.isEmpty()) return "Unknown Author"
+            return authors.joinToString(", ")
+        }
+
+    @Exclude
     @Composable
     fun getCoverPainter(): Painter {
         val context = LocalContext.current
         val imageLoader = createImageLoader(context)
 
-        val imageUrl = if (coverUrl.isEmpty()) {
-            "https://lgimages.s3.amazonaws.com/nc-md.gif"
-        } else {
-            coverUrl
-        }
+        val imageUrl = coverUrl.ifEmpty { "https://lgimages.s3.amazonaws.com/nc-md.gif" }
 
         return rememberAsyncImagePainter(
             model = ImageRequest.Builder(context)
@@ -75,23 +66,28 @@ class Book(
     }
 }
 
+@IgnoreExtraProperties
 data class PersonalBook(
-    val id: Long=-1L,
-    val book: com.nikoniche.booki.Book,
-    var status: com.nikoniche.booki.Status = com.nikoniche.booki.Status.PlanToRead,
-    var readPages: Int=0,
-    var rating: Int=1, // 1-10 / 2 na 5 hvezdicek
-    var review: String="",
-    var bookNotes: String="",
-)
-
-sealed class Status(
-    val id: Int,
-    val inText: String,
-    val color: Color,
+    var id: Long = -1L,
+    var book: Book = Book(),
+    var status: Status = Status.PlanToRead,
+    var readPages: Int = 0,
+    var rating: Int = 1,
+    var review: String = "",
+    var bookNotes: String = ""
 ) {
-    data object PlanToRead : com.nikoniche.booki.Status(id=0, "Plan to read", Color.Gray)
-    data object Reading : com.nikoniche.booki.Status(id=1, "Reading", Color.Cyan)
-    data object Finished : com.nikoniche.booki.Status(id=2, "Finished", Color.Green)
-    data object Dropped : com.nikoniche.booki.Status(id=3, "Dropped", Color.Red)
+    // Constructor mặc định cho Firebase
+    constructor() : this(-1L, Book(), Status.PlanToRead, 0)
+}
+
+enum class Status(val id: Int, val inText: String, val hexColor: String) {
+    PlanToRead(0, "Plan to read", "#808080"),
+    Reading(1, "Reading", "#00FFFF"),
+    Finished(2, "Finished", "#008000"),
+    Dropped(3, "Dropped", "#FF0000");
+
+    // Chỉ định @get:Exclude để Firebase không lưu kiểu Color (gây lỗi)
+    @get:Exclude
+    val color: Color
+        get() = Color(android.graphics.Color.parseColor(hexColor))
 }
