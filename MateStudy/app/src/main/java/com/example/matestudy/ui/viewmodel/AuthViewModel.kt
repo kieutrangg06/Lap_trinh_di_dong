@@ -305,41 +305,51 @@ class AuthViewModel(
         }
     }
 
+    // Trong AuthViewModel.kt
     fun updateProfile(
         newUsername: String,
         newEmail: String,
         newNienKhoa: Int?,
-        newAvatarUri: String?
+        newAvatarUrl: String?          // ← Đổi thành newAvatarUrl cho rõ ràng
     ) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
 
             try {
-                val current = repository.getCurrentUserFlow().first() ?: run {
-                    _error.value = "Không tìm thấy thông tin người dùng"
-                    return@launch
-                }
+                val currentEntity = repository.getCurrentUserFlow().first()
+                    ?: run {
+                        _error.value = "Không tìm thấy thông tin người dùng hiện tại"
+                        return@launch
+                    }
 
-                if (newUsername.length < 4) {
+                // Validation
+                if (newUsername.trim().length < 4) {
                     _error.value = "Tên đăng nhập phải từ 4 ký tự trở lên"
                     return@launch
                 }
-                if (!newEmail.contains("@") || !newEmail.contains(".")) {
+                if (newEmail.isNotBlank() && (!newEmail.contains("@") || !newEmail.contains("."))) {
                     _error.value = "Email không hợp lệ"
                     return@launch
                 }
 
-                val updated = current.copy(
+                val updatedEntity = currentEntity.copy(
                     tenDangNhap = newUsername.trim(),
                     email = newEmail.trim(),
                     nienKhoa = newNienKhoa,
-                    anhDaiDien = newAvatarUri ?: current.anhDaiDien
+                    anhDaiDien = newAvatarUrl ?: currentEntity.anhDaiDien
                 )
 
-                repository.updateUser(updated)
+                repository.updateUser(updatedEntity)
+
+                // Cập nhật lại session để UI refresh ngay lập tức
+                repository.loginToSession(updatedEntity)
+
+                _error.value = null
+
             } catch (e: Exception) {
                 _error.value = "Cập nhật thất bại: ${e.message}"
+                e.printStackTrace()
             } finally {
                 _isLoading.value = false
             }

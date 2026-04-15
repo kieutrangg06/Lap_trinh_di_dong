@@ -1,6 +1,7 @@
 package com.example.matestudy.data.repository
 
 import com.example.matestudy.data.entity.ReviewEntity
+import com.example.matestudy.data.entity.ReviewWithUser
 import com.example.matestudy.data.entity.ThongBaoEntity
 import com.example.matestudy.data.remote.FirestoreDataSource
 import kotlinx.coroutines.flow.Flow
@@ -53,4 +54,7 @@ class ReviewRepository(private val firestore: FirestoreDataSource,private val th
     suspend fun deleteReview(ngayDang: Long) {
         firestore.deleteReview(ngayDang)
     }
+
+    fun getAllReviewsForAdminWithUser(): Flow<List<ReviewWithUser>> =
+        firestore.getAllReviewsForAdminWithUser()
 }

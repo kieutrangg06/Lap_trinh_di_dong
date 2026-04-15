@@ -27,6 +27,18 @@ class ForumViewModel(
     // ─────────────────────────────────────────
     // 2. Danh sách bài viết (category + search)
     // ─────────────────────────────────────────
+    fun loadPostDetail(postId: Long) {
+        _selectedPostId.value = postId
+        viewModelScope.launch {
+            try {
+                val userId = currentUserId.value
+                val post = forumRepository.getPostWithAuthor(postId, userId)
+                _selectedPost.value = post
+            } catch (e: Exception) {
+                _error.value = "Lỗi tải bài viết: ${e.message}"
+            }
+        }
+    }
     private val _currentCategory = MutableStateFlow("all")
     val currentCategory: StateFlow<String> = _currentCategory.asStateFlow()
 
@@ -82,27 +94,6 @@ class ForumViewModel(
         _searchQuery.value = query
     }
 
-    // Post detail
-    fun loadPostDetail(postId: Long) {
-        _selectedPostId.value = postId
-        viewModelScope.launch {
-            try {
-                val entity = forumRepository.getPostById(postId)
-
-                if (entity != null) {
-                    val likes = forumRepository.getLikeCount(postId).firstOrNull() ?: 0
-                    val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: 0L
-                    val isLiked = forumRepository.isPostLiked(postId, userId)
-
-                    _selectedPost.value = entity.toPost(likes, isLiked)
-                } else {
-                    println("DEBUG: Khong tim thay Entity cho ID $postId")
-                }
-            } catch (e: Exception) {
-                _error.value = "Lỗi tải bài viết: ${e.message}"
-            }
-        }
-    }
 
     // Tạo bài viết
     fun createPost(tieuDe: String, noiDung: String, category: String, filePath: String?) {

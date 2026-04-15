@@ -1,7 +1,5 @@
 package com.example.matestudy.ui.screen
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -10,7 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -22,76 +21,183 @@ import com.example.matestudy.ui.theme.PrimaryPink
 import com.example.matestudy.ui.viewmodel.AuthViewModel
 
 @Composable
-fun ProfileScreen(onChangePasswordClick: () -> Unit, viewModel: AuthViewModel) {
+fun ProfileScreen(
+    onChangePasswordClick: () -> Unit,
+    viewModel: AuthViewModel
+) {
     val currentUser by viewModel.currentUser.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
-    var editedUsername by remember { mutableStateOf(currentUser.tenDangNhap) }
-    var editedEmail by remember { mutableStateOf(currentUser.email) }
-    var editedNienKhoa by remember { mutableStateOf(currentUser.nienKhoa?.toString() ?: "") }
-    var selectedImageUri by remember { mutableStateOf<String?>(null) }
+    // Các trường chỉnh sửa
+    var editedUsername by remember { mutableStateOf("") }
+    var editedEmail by remember { mutableStateOf("") }
+    var editedNienKhoa by remember { mutableStateOf("") }
+    var avatarUrlInput by remember { mutableStateOf("") }
 
+    // Load dữ liệu từ user hiện tại
     LaunchedEffect(currentUser) {
         editedUsername = currentUser.tenDangNhap
         editedEmail = currentUser.email
         editedNienKhoa = currentUser.nienKhoa?.toString() ?: ""
-    }
-
-    val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { selectedImageUri = it.toString() }
+        avatarUrlInput = currentUser.anhDaiDien ?: ""
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Avatar Preview
         Box(contentAlignment = Alignment.BottomEnd) {
-            Surface(modifier = Modifier.size(130.dp), shape = CircleShape, color = Color(0xFFF0F0F0), border = BorderStroke(4.dp, Color.White), shadowElevation = 8.dp) {
-                val displayImage = selectedImageUri ?: currentUser.anhDaiDien
+            Surface(
+                modifier = Modifier.size(130.dp),
+                shape = CircleShape,
+                color = Color(0xFFF0F0F0),
+                border = BorderStroke(4.dp, Color.White),
+                shadowElevation = 8.dp
+            ) {
+                val displayImage = avatarUrlInput.ifBlank { currentUser.anhDaiDien }
+
                 if (!displayImage.isNullOrBlank()) {
-                    AsyncImage(model = displayImage, contentDescription = null, modifier = Modifier.fillMaxSize().clip(CircleShape), contentScale = ContentScale.Crop)
+                    AsyncImage(
+                        model = displayImage,
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                        placeholder = null
+                    )
                 } else {
-                    Icon(Icons.Default.Person, null, modifier = Modifier.padding(30.dp), tint = Color.LightGray)
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.padding(30.dp),
+                        tint = Color.LightGray
+                    )
                 }
-            }
-            SmallFloatingActionButton(onClick = { imagePickerLauncher.launch("image/*") }, containerColor = PrimaryPink, contentColor = Color.White, shape = CircleShape) {
-                Icon(Icons.Default.CameraAlt, null, modifier = Modifier.size(16.dp))
             }
         }
 
         Spacer(Modifier.height(32.dp))
 
-        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+        // Card chứa thông tin
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large,
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
             Column(Modifier.padding(20.dp)) {
-                ProfileTextField("Tên hiển thị", editedUsername) { editedUsername = it }
-                ProfileTextField("Email liên hệ", editedEmail, KeyboardType.Email) { editedEmail = it }
-                ProfileTextField("Niên khóa", editedNienKhoa, KeyboardType.Number) { editedNienKhoa = it }
+                ProfileTextField(
+                    label = "Tên hiển thị",
+                    value = editedUsername,
+                    onValueChange = { editedUsername = it }
+                )
 
-                Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                ProfileTextField(
+                    label = "Email liên hệ",
+                    value = editedEmail,
+                    keyboardType = KeyboardType.Email,
+                    onValueChange = { editedEmail = it }
+                )
+
+                ProfileTextField(
+                    label = "Niên khóa (ví dụ: 2024)",
+                    value = editedNienKhoa,
+                    keyboardType = KeyboardType.Number,
+                    onValueChange = { editedNienKhoa = it }
+                )
+
+                // Link URL cho avatar
+                ProfileTextField(
+                    label = "Link ảnh đại diện (URL)",
+                    value = avatarUrlInput,
+                    onValueChange = { avatarUrlInput = it }
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Text("Chức vụ", fontWeight = FontWeight.Bold)
-                    Text(if (currentUser.vaiTro == "sinh_vien") "Sinh viên" else "Quản trị viên", color = PrimaryPink)
+                    Text(
+                        text = if (currentUser.vaiTro == "sinh_vien") "Sinh viên" else "Quản trị viên",
+                        color = PrimaryPink,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }
 
         Spacer(Modifier.height(24.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = { /* Reset */ }, modifier = Modifier.weight(1f), shape = MaterialTheme.shapes.medium) { Text("HỦY") }
-            Button(onClick = { viewModel.updateProfile(editedUsername, editedEmail, editedNienKhoa.toIntOrNull(), selectedImageUri) }, modifier = Modifier.weight(1f), shape = MaterialTheme.shapes.medium, enabled = !isLoading) {
+        // Hiển thị lỗi
+        if (!error.isNullOrBlank()) {
+            Text(
+                text = error!!,
+                color = Color.Red,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+
+        // Hai nút Hủy và Lưu
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedButton(
+                onClick = {
+                    // Reset về giá trị gốc
+                    editedUsername = currentUser.tenDangNhap
+                    editedEmail = currentUser.email
+                    editedNienKhoa = currentUser.nienKhoa?.toString() ?: ""
+                    avatarUrlInput = currentUser.anhDaiDien ?: ""
+                },
+                modifier = Modifier.weight(1f),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text("HỦY")
+            }
+
+            Button(
+                onClick = {
+                    val finalAvatarUrl = avatarUrlInput.ifBlank { null }
+
+                    viewModel.updateProfile(
+                        newUsername = editedUsername,
+                        newEmail = editedEmail,
+                        newNienKhoa = editedNienKhoa.toIntOrNull(),
+                        newAvatarUrl = finalAvatarUrl
+                    )
+                },
+                modifier = Modifier.weight(1f),
+                shape = MaterialTheme.shapes.medium,
+                enabled = !isLoading
+            ) {
                 if (isLoading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp), // Sửa ở đây
-                        color = Color.White,             // Đảm bảo màu trắng để nổi bật trên nút
-                        strokeWidth = 2.dp               // Giảm độ dày để trông tinh tế hơn
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
                     )
                 } else {
-                    Text("LƯU")
+                    Text("LƯU THAY ĐỔI")
                 }
             }
         }
 
-        TextButton(onClick = onChangePasswordClick, modifier = Modifier.padding(top = 16.dp)) {
+        Spacer(Modifier.height(16.dp))
+
+        // Nút đổi mật khẩu
+        TextButton(onClick = onChangePasswordClick) {
             Icon(Icons.Default.VpnKey, null, Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
             Text("Yêu cầu đổi mật khẩu")
@@ -100,9 +206,18 @@ fun ProfileScreen(onChangePasswordClick: () -> Unit, viewModel: AuthViewModel) {
 }
 
 @Composable
-fun ProfileTextField(label: String, value: String, keyboardType: KeyboardType = KeyboardType.Text, onValueChange: (String) -> Unit) {
+fun ProfileTextField(
+    label: String,
+    value: String,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    onValueChange: (String) -> Unit
+) {
     Column(Modifier.padding(vertical = 8.dp)) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.Gray
+        )
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,

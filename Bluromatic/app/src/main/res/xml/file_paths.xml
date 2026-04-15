@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Cho phép FileProvider truy cập vào thư mục files/blur_filter_outputs -->
+    <files-path
+        name="blur_outputs"
+        path="blur_filter_outputs" />
+</paths>

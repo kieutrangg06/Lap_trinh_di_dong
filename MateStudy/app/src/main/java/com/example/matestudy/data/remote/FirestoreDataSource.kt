@@ -5,8 +5,12 @@ import com.example.matestudy.data.entity.*
 import com.google.firebase.firestore.*
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class FirestoreDataSource {
@@ -28,15 +32,6 @@ class FirestoreDataSource {
     // ────────────────────────────────────────────────
     // 1. USER - Quản lý người dùng & phiên đăng nhập
     // ────────────────────────────────────────────────
-
-    suspend fun saveUser(user: UserEntity) {
-        db.collection("users").document(user.id.toString()).set(user).await()
-    }
-
-    suspend fun updateUser(user: UserEntity) {
-        db.collection("users").document(user.id.toString()).set(user).await()
-    }
-
     fun getCurrentUserFlow(): Flow<UserEntity?> = callbackFlow {
         val listener = db.collection("sessions").document(SESSION_ID)
             .addSnapshotListener { snapshot, error ->
@@ -99,6 +94,27 @@ class FirestoreDataSource {
         db.collection("users").document(userId.toString()).delete().await()
     }
 
+    suspend fun getUserById(userId: Long): UserEntity? {
+        return db.collection("users")
+            .document(userId.toString())
+            .get()
+            .await()
+            .toObject(UserEntity::class.java)
+    }
+
+    fun getUserByIdFlow(userId: Long): Flow<UserEntity?> = callbackFlow {
+        val listener = db.collection("users")
+            .document(userId.toString())
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                trySend(snapshot?.toObject(UserEntity::class.java))
+            }
+        awaitClose { listener.remove() }
+    }
+
     // ────────────────────────────────────────────────
     // 2. POST & FORUM - Bài viết, bình luận, lượt thích
     // ────────────────────────────────────────────────
@@ -147,6 +163,9 @@ class FirestoreDataSource {
         awaitClose { listener.remove() }
     }
 
+    // FILE: FirestoreDataSource.kt
+
+
     fun getFeaturedPosts(): Flow<List<PostWithLikeCount>> = callbackFlow {
         val listener = db.collection("bai_viet_dien_dan")
             .whereEqualTo("trang_thai", "da_duyet")
@@ -155,35 +174,60 @@ class FirestoreDataSource {
                     close(e)
                     return@addSnapshotListener
                 }
-                val posts = snap?.toObjects(PostEntity::class.java) ?: emptyList()
 
-                val featured = posts.map { post ->
-                    val likeCount = runCatching {
-                        db.collection("luot_thich_bai_viet")
-                            .whereEqualTo("bai_viet_id", post.id)
-                            .get()
-                            .result
-                            ?.size() ?: 0
-                    }.getOrDefault(0)
+                val postEntities = snap?.toObjects(PostEntity::class.java) ?: emptyList()
 
-                    PostWithLikeCount(
-                        id = post.id,
-                        tac_gia_id = post.tac_gia_id,
-                        tieu_de = post.tieu_de,
-                        noi_dung = post.noi_dung,
-                        file_dinh_kem = post.file_dinh_kem,
-                        trang_thai = post.trang_thai,
-                        ngay_dang = post.ngay_dang,
-                        category = post.category,
-                        likeCount = likeCount
-                    )
-                }.sortedWith(
-                    compareByDescending<PostWithLikeCount> { it.likeCount }
-                        .thenByDescending { it.ngay_dang }
-                )
+                // ✅ CÁCH SỬA: Sử dụng Coroutine Scope để chạy async
+                // callbackFlow đã cung cấp sẵn một CoroutineScope (chính là 'this' ở đây)
 
-                trySend(featured)
+                launch { // Chạy một coroutine mới để xử lý việc lấy like tốn thời gian
+                    try {
+                        // 1. Tạo danh sách các Deferred (các công việc đang chạy song song)
+                        val deferredPosts = postEntities.map { post ->
+                            async(Dispatchers.IO) { // Chạy mỗi request lấy like trên IO thread
+                                // Lấy snapshot của collection lượt thích cho bài viết này
+                                val likesSnap = db.collection("luot_thich_bai_viet")
+                                    .whereEqualTo("bai_viet_id", post.id)
+                                    .get()
+                                    .await() // Chờ thực sự lấy xong dữ liệu (suspend)
+
+                                val likeCount = likesSnap.size()
+
+                                // Trả về đối tượng đã có likeCount thật
+                                PostWithLikeCount(
+                                    id = post.id,
+                                    tac_gia_id = post.tac_gia_id,
+                                    tieu_de = post.tieu_de,
+                                    noi_dung = post.noi_dung,
+                                    file_dinh_kem = post.file_dinh_kem,
+                                    trang_thai = post.trang_thai,
+                                    ngay_dang = post.ngay_dang,
+                                    category = post.category,
+                                    likeCount = likeCount // ✅ LikeCount thật ở đây
+                                )
+                            }
+                        }
+
+                        // 2. Chờ TẤT CẢ các công việc async ở trên hoàn thành
+                        val featured = deferredPosts.awaitAll()
+
+                        // 3. Sắp xếp (giữ nguyên logic cũ)
+                        val sortedFeatured = featured.sortedWith(
+                            compareByDescending<PostWithLikeCount> { it.likeCount }
+                                .thenByDescending { it.ngay_dang }
+                        )
+
+                        // 4. Gửi danh sách ĐÃ CÓ DATA THẬT lên tầng trên
+                        trySend(sortedFeatured)
+
+                    } catch (ioException: Exception) {
+                        // Xử lý lỗi nếu việc lấy like bị thất bại
+                        // Có thể gửi list rỗng hoặc list với likeCount = 0 tùy bạn
+                        trySend(emptyList())
+                    }
+                }
             }
+
         awaitClose { listener.remove() }
     }
 
@@ -496,5 +540,93 @@ class FirestoreDataSource {
             .whereEqualTo("sinhVienId", sinhVienId)
             .whereEqualTo("daDoc", false)
             .get().await().size()
+    }
+
+    // Thêm vào class FirestoreDataSource
+    suspend fun updateHocKy(hocKy: HocKyEntity) {
+        db.collection("hoc_ky").document(hocKy.id.toString()).set(hocKy).await()
+    }
+
+    suspend fun deleteHocKy(hocKyId: Long) {
+        db.collection("hoc_ky").document(hocKyId.toString()).delete().await()
+        // Xóa các môn học thuộc học kỳ này
+        val monHocs = db.collection("mon_hoc").whereEqualTo("hocKyId", hocKyId).get().await()
+        db.runBatch { batch ->
+            monHocs.forEach { batch.delete(it.reference) }
+        }.await()
+    }
+
+    suspend fun updateMonHoc(monHoc: MonHocEntity) {
+        db.collection("mon_hoc").document(monHoc.id.toString()).set(monHoc).await()
+    }
+
+    suspend fun deleteMonHoc(monHocId: Long) {
+        db.collection("mon_hoc").document(monHocId.toString()).delete().await()
+    }
+
+    // Trong FirestoreDataSource.kt
+    fun getAllReviewsForAdminWithUser(): Flow<List<ReviewWithUser>> = callbackFlow {
+        val listener = db.collection("danh_gia_mon_giang_vien")
+            .orderBy("ngay_dang", Query.Direction.DESCENDING)
+            .addSnapshotListener { snap, e ->
+                if (e != null) {
+                    close(e)
+                    return@addSnapshotListener
+                }
+
+                val reviews = snap?.toObjects(ReviewEntity::class.java) ?: emptyList()
+
+                launch {  // Chạy coroutine để lấy thông tin user song song
+                    val reviewWithUsers = reviews.mapNotNull { review ->
+                        val user = getUserById(review.sinh_vien_id)  // đã có hàm này
+                        if (user != null) {
+                            ReviewWithUser(
+                                review = review,
+                                tenDangNhap = user.tenDangNhap ?: "sv${review.sinh_vien_id}"
+                            )
+                        } else {
+                            ReviewWithUser(
+                                review = review,
+                                tenDangNhap = "sv${review.sinh_vien_id}"
+                            )
+                        }
+                    }
+                    trySend(reviewWithUsers)
+                }
+            }
+        awaitClose { listener.remove() }
+    }
+
+    // ────────────────────────────────────────────────
+// 1. USER - Quản lý người dùng
+// ────────────────────────────────────────────────
+
+    /** Lưu user mới (thường dùng khi đăng ký) */
+    suspend fun saveUser(user: UserEntity) {
+        // Với user mới, dùng id làm document name
+        db.collection("users")
+            .document(user.id.toString())
+            .set(user)  // set full object
+            .await()
+    }
+
+    /** Cập nhật thông tin user (profile, avatar, password...) */
+    suspend fun updateUser(user: UserEntity) {
+        if (user.id == 0L) {
+            throw IllegalArgumentException("User ID không được là 0 khi update")
+        }
+
+        db.collection("users")
+            .document(user.id.toString())
+            .set(user, SetOptions.merge())   // ← Quan trọng: merge để chỉ cập nhật field thay đổi
+            .await()
+    }
+
+    // Hoặc nếu bạn muốn update chỉ một số field (nhanh hơn):
+    suspend fun updateUserFields(userId: Long, fields: Map<String, Any?>) {
+        db.collection("users")
+            .document(userId.toString())
+            .update(fields)
+            .await()
     }
 }

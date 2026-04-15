@@ -55,10 +55,10 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-database") // Sửa lỗi ở đây: không dùng .ktx và không dùng libs.
+    implementation("com.google.firebase:firebase-database")
 
     // Navigation & Image Loading
-    implementation("androidx.navigation:navigation-compose:2.8.0-alpha08") // Version ổn định cho Compose
+    implementation("androidx.navigation:navigation-compose:2.8.0-alpha08")
     implementation("io.coil-kt:coil-compose:2.6.0")
 
     // Test dependencies

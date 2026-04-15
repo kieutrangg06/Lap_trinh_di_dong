@@ -8,45 +8,50 @@ import com.example.matestudy.data.repository.ScheduleRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class AdminViewModel(
-    private val scheduleRepository: ScheduleRepository
-) : ViewModel() {
-
-    val hocKyList: StateFlow<List<HocKyEntity>> = scheduleRepository.getAllHocKy()
+class AdminViewModel(private val scheduleRepository: ScheduleRepository) : ViewModel() {
+    val hocKyList = scheduleRepository.getAllHocKy()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
 
     private val _selectedHocKy = MutableStateFlow<HocKyEntity?>(null)
-    val selectedHocKy: StateFlow<HocKyEntity?> = _selectedHocKy.asStateFlow()
+    val selectedHocKy = _selectedHocKy.asStateFlow()
 
-    val monHocList: StateFlow<List<MonHocEntity>> = _selectedHocKy
-        .flatMapLatest { hk ->
-            if (hk != null) scheduleRepository.getMonHocByHocKy(hk.id)
-            else flowOf(emptyList())
+    // Filter môn học theo searchQuery và selectedHocKy
+    val filteredMonHocList = combine(_selectedHocKy, _searchQuery) { hk, query ->
+        hk to query
+    }.flatMapLatest { (hk, query) ->
+        val flow = if (hk != null) scheduleRepository.getMonHocByHocKy(hk.id)
+        else flowOf(emptyList())
+        flow.map { list ->
+            list.filter { it.tenMon.contains(query, ignoreCase = true) }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun selectHocKy(hocKy: HocKyEntity) {
-        _selectedHocKy.value = hocKy
-    }
+    fun onSearchQueryChange(query: String) { _searchQuery.value = query }
+    fun selectHocKy(hocKy: HocKyEntity?) { _selectedHocKy.value = hocKy }
 
-    fun addHocKy(hocKy: HocKyEntity) {
+    // Thêm/Sửa/Xóa
+    fun saveHocKy(hocKy: HocKyEntity) {
         viewModelScope.launch {
-            scheduleRepository.insertHocKy(hocKy)
+            if (hocKy.id == 0L) scheduleRepository.insertHocKy(hocKy)
+            else scheduleRepository.updateHocKy(hocKy)
         }
     }
 
-    fun deleteHocKy(hocKy: HocKyEntity) {
-        // TODO: triển khai xóa (cần xóa cả môn học liên quan nếu muốn)
-        // Hiện tại FirestoreDataSource chưa có hàm deleteHocKy → cần thêm
+    fun deleteHocKy(id: Long) {
+        viewModelScope.launch { scheduleRepository.deleteHocKy(id) }
     }
 
-    fun addMonHoc(monHoc: MonHocEntity) {
+    fun saveMonHoc(monHoc: MonHocEntity) {
         viewModelScope.launch {
-            scheduleRepository.insertMonHoc(monHoc)
+            if (monHoc.id == 0L) scheduleRepository.insertMonHoc(monHoc)
+            else scheduleRepository.updateMonHoc(monHoc)
         }
     }
 
-    fun deleteMonHoc(monHoc: MonHocEntity) {
-        // TODO: triển khai delete nếu cần
+    fun deleteMonHoc(id: Long) {
+        viewModelScope.launch { scheduleRepository.deleteMonHoc(id) }
     }
 }

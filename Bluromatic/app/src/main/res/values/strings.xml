@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Bluromatic</string>
+
+    <!-- WorkManager related strings -->
+    <string name="cleaning_up_files">Cleaning up old temporary files</string>
+    <string name="blurring_image">Blurring image</string>
+    <string name="saving_image">Saving image</string>
+
+    <string name="invalid_input_uri">Invalid input URI</string>
+    <string name="error_applying_blur">Error applying blur</string>
+    <string name="error_cleaning_file">Error cleaning up files</string>
+    <string name="error_saving_image">Error saving image</string>
+    <string name="writing_to_mediaStore_failed">Writing to MediaStore failed</string>
+
+    <string name="start">Start</string>
+    <string name="a_little_blurred">A little blurred</string>
+    <string name="more_blurred">More blurred</string>
+    <string name="the_most_blurred">The most blurred</string>
+</resources>

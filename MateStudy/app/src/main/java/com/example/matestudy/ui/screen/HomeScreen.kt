@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.ui.res.painterResource
 import coil.compose.AsyncImage
 import com.example.matestudy.data.Comment
 import com.example.matestudy.data.Post
@@ -147,9 +148,15 @@ fun HomeScreen(
 }
 
 @Composable
-fun PostCard(post: Post, onClick: () -> Unit, onLike: () -> Unit) {
+fun PostCard(
+    post: Post,
+    onClick: () -> Unit,
+    onLike: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -157,18 +164,30 @@ fun PostCard(post: Post, onClick: () -> Unit, onLike: () -> Unit) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
-                    model = "https://ui-avatars.com/api/?name=${post.tacGiaId}&background=random",
+                    model = post.tacGiaAvatar?.takeIf { it.isNotBlank() }
+                        ?: "https://ui-avatars.com/api/?name=${post.tacGiaTen.ifBlank { "SV" }}&background=random",
                     contentDescription = null,
                     modifier = Modifier.size(42.dp).clip(CircleShape),
                     contentScale = ContentScale.Crop
                 )
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text("Sinh viên ${post.tacGiaId}", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    Text(formatDate(post.ngayDang), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                    Text(
+                        text = post.tacGiaTen.ifBlank { "Sinh viên ${post.tacGiaId}" },   // ← ĐÃ SỬA
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                    Text(
+                        formatDate(post.ngayDang),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary
+                    )
                 }
                 Spacer(Modifier.weight(1f))
-                Surface(color = PrimaryLight, shape = RoundedCornerShape(8.dp)) {
+                Surface(
+                    color = PrimaryLight,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
                     Text(
                         post.category.uppercase(),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
@@ -180,7 +199,10 @@ fun PostCard(post: Post, onClick: () -> Unit, onLike: () -> Unit) {
             }
 
             Spacer(Modifier.height(12.dp))
-            Text(post.tieuDe, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold))
+            Text(
+                post.tieuDe,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
+            )
             Spacer(Modifier.height(6.dp))
             Text(
                 text = post.noiDung,
@@ -197,7 +219,11 @@ fun PostCard(post: Post, onClick: () -> Unit, onLike: () -> Unit) {
                 ) {
                     Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.AttachFile, null, Modifier.size(14.dp), tint = Color.Gray)
-                        Text(post.fileDinhKem, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(start = 4.dp))
+                        Text(
+                            post.fileDinhKem,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
                     }
                 }
             }
@@ -216,11 +242,13 @@ fun PostCard(post: Post, onClick: () -> Unit, onLike: () -> Unit) {
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(Modifier.width(6.dp))
-                    Text("${post.likeCount}", color = if (post.isLiked) PrimaryPink else TextSecondary, fontWeight = FontWeight.Medium)
+                    Text(
+                        "${post.likeCount}",
+                        color = if (post.isLiked) PrimaryPink else TextSecondary,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
-
                 Spacer(Modifier.width(24.dp))
-
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.ChatBubbleOutline, null, Modifier.size(20.dp), tint = TextSecondary)
                     Spacer(Modifier.width(6.dp))
@@ -462,9 +490,11 @@ fun CommentItem(comment: Comment) {
         horizontalArrangement = Arrangement.Start
     ) {
         AsyncImage(
-            model = "https://ui-avatars.com/api/?name=${comment.tacGiaId}&background=random",
+            model = comment.tacGiaAvatar?.takeIf { it.isNotBlank() }
+                ?: "https://ui-avatars.com/api/?name=${comment.tacGiaTen.ifBlank { comment.tacGiaId.toString() }}&background=random",
             contentDescription = null,
-            modifier = Modifier.size(34.dp).clip(CircleShape)
+            modifier = Modifier.size(34.dp).clip(CircleShape),
+            contentScale = ContentScale.Crop
         )
 
         Spacer(Modifier.width(10.dp))
@@ -475,8 +505,9 @@ fun CommentItem(comment: Comment) {
                 shape = RoundedCornerShape(0.dp, 16.dp, 16.dp, 16.dp)
             ) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    // Trong CommentItem
                     Text(
-                        text = "Sinh viên ${comment.tacGiaId}",
+                        text = comment.tacGiaTen.ifBlank { "Sinh viên ${comment.tacGiaId}" },   // ← sửa
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 12.sp,
                         color = PrimaryPink

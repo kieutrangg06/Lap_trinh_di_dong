@@ -107,8 +107,13 @@ fun ScaffoldWithBottomBarAndDrawer(
                         }
                     },
                     actions = {
-                        IconButton(onClick = { /* TODO: Notifications */ }) {
-                            Icon(Icons.Default.NotificationsNone, contentDescription = null)
+                        // Icon chuông ở Top Bar (nếu muốn giữ)
+                        IconButton(onClick = {
+                            bottomNavController.navigate(BottomNavItem.Notification.route) {
+                                launchSingleTop = true
+                            }
+                        }) {
+                            Icon(Icons.Default.NotificationsNone, contentDescription = "Thông báo")
                         }
                     },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
@@ -138,7 +143,9 @@ fun ScaffoldWithBottomBarAndDrawer(
                                 ),
                                 onClick = {
                                     bottomNavController.navigate(item.route) {
-                                        popUpTo(bottomNavController.graph.findStartDestination().id) { saveState = true }
+                                        popUpTo(bottomNavController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
                                         launchSingleTop = true
                                         restoreState = true
                                     }
@@ -146,12 +153,13 @@ fun ScaffoldWithBottomBarAndDrawer(
                             )
                         }
                     } else {
+                        // ================== USER BOTTOM BAR ==================
                         val userItems = listOf(
                             BottomNavItem.Home,
                             BottomNavItem.Schedule,
                             BottomNavItem.Rating,
                             BottomNavItem.Group,
-                            BottomNavItem.Notification,
+                            BottomNavItem.Notification,   // ← Đã thêm đúng
                             BottomNavItem.Profile
                         )
                         userItems.forEach { item ->
@@ -166,7 +174,9 @@ fun ScaffoldWithBottomBarAndDrawer(
                                 ),
                                 onClick = {
                                     bottomNavController.navigate(item.route) {
-                                        popUpTo(bottomNavController.graph.findStartDestination().id) { saveState = true }
+                                        popUpTo(bottomNavController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
                                         launchSingleTop = true
                                         restoreState = true
                                     }
@@ -208,4 +218,5 @@ fun DrawerItem(
             selectedContainerColor = Color(0xFFFFEBF2),
             selectedTextColor = PrimaryPink
         )
-    )}
+    )
+}
