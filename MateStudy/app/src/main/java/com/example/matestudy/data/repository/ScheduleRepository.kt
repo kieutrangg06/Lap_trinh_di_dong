@@ -6,24 +6,43 @@ import kotlinx.coroutines.flow.Flow
 
 class ScheduleRepository(private val firestore: FirestoreDataSource) {
 
-    // HocKy
+    // ────────────────────────────────────────────────
+    // 1. HỌC KỲ (HOCKY)
+    // ────────────────────────────────────────────────
+
     fun getAllHocKy(): Flow<List<HocKyEntity>> = firestore.getAllHocKy()
 
     suspend fun insertHocKy(hocKy: HocKyEntity) {
         firestore.insertHocKy(hocKy)
     }
 
-    // MonHoc
+    suspend fun updateHocKy(hocKy: HocKyEntity) = firestore.updateHocKy(hocKy)
+
+    suspend fun deleteHocKy(id: Long) = firestore.deleteHocKy(id)
+
+    // ────────────────────────────────────────────────
+    // 2. MÔN HỌC (MONHOC)
+    // ────────────────────────────────────────────────
+
+    fun getAllMonHoc(): Flow<List<MonHocEntity>> = firestore.getAllMonHoc()
+
     fun getMonHocByHocKy(hocKyId: Long): Flow<List<MonHocEntity>> =
         firestore.getMonHocByHocKy(hocKyId)
-
-    suspend fun insertMonHoc(monHoc: MonHocEntity): Long =
-        firestore.insertMonHoc(monHoc)
 
     suspend fun getMonHocById(id: Long): MonHocEntity? =
         firestore.getMonHocById(id)
 
-    // LichCaNhan
+    suspend fun insertMonHoc(monHoc: MonHocEntity): Long =
+        firestore.insertMonHoc(monHoc)
+
+    suspend fun updateMonHoc(monHoc: MonHocEntity) = firestore.updateMonHoc(monHoc)
+
+    suspend fun deleteMonHoc(id: Long) = firestore.deleteMonHoc(id)
+
+    // ────────────────────────────────────────────────
+    // 3. LỊCH CÁ NHÂN (LICHCANHAN)
+    // ────────────────────────────────────────────────
+
     fun getLichCaNhan(sinhVienId: Long): Flow<List<LichCaNhanEntity>> =
         firestore.getLichBySinhVien(sinhVienId)
 
@@ -41,12 +60,15 @@ class ScheduleRepository(private val firestore: FirestoreDataSource) {
         firestore.deleteLich(lich)
     }
 
-    // SkCaNhan
-    suspend fun insertSk(sk: SkCaNhanEntity): Long =
-        firestore.insertSk(sk)
+    // ────────────────────────────────────────────────
+    // 4. SỰ KIỆN CÁ NHÂN (SKCANHAN)
+    // ────────────────────────────────────────────────
 
     suspend fun getSkById(id: Long): SkCaNhanEntity? =
         firestore.getSkById(id)
+
+    suspend fun insertSk(sk: SkCaNhanEntity): Long =
+        firestore.insertSk(sk)
 
     suspend fun updateSk(sk: SkCaNhanEntity) {
         firestore.updateSk(sk)
@@ -55,10 +77,4 @@ class ScheduleRepository(private val firestore: FirestoreDataSource) {
     suspend fun deleteSk(sk: SkCaNhanEntity) {
         firestore.deleteSk(sk)
     }
-
-    suspend fun updateHocKy(hocKy: HocKyEntity) = firestore.updateHocKy(hocKy)
-    suspend fun deleteHocKy(id: Long) = firestore.deleteHocKy(id)
-
-    suspend fun updateMonHoc(monHoc: MonHocEntity) = firestore.updateMonHoc(monHoc)
-    suspend fun deleteMonHoc(id: Long) = firestore.deleteMonHoc(id)
 }

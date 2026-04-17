@@ -7,8 +7,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +27,7 @@ import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import com.example.matestudy.data.Comment
 import com.example.matestudy.data.Post
@@ -33,6 +36,10 @@ import com.example.matestudy.ui.viewmodel.ForumViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+// ────────────────────────────────────────────────
+// 1. MÀN HÌNH CHÍNH DIỄN ĐÀN (HOME)
+// ────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +67,6 @@ fun HomeScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            // Thanh tìm kiếm cao cấp
             Surface(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 shape = MaterialTheme.shapes.medium,
@@ -86,7 +92,6 @@ fun HomeScreen(
                 )
             }
 
-            // Danh mục dạng Tab cuộn
             val tabs = listOf(
                 "Tất cả" to "all",
                 "Nổi bật" to "featured",
@@ -125,7 +130,6 @@ fun HomeScreen(
                 }
             }
 
-            // List bài viết
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -147,117 +151,9 @@ fun HomeScreen(
     }
 }
 
-@Composable
-fun PostCard(
-    post: Post,
-    onClick: () -> Unit,
-    onLike: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AsyncImage(
-                    model = post.tacGiaAvatar?.takeIf { it.isNotBlank() }
-                        ?: "https://ui-avatars.com/api/?name=${post.tacGiaTen.ifBlank { "SV" }}&background=random",
-                    contentDescription = null,
-                    modifier = Modifier.size(42.dp).clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = post.tacGiaTen.ifBlank { "Sinh viên ${post.tacGiaId}" },   // ← ĐÃ SỬA
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp
-                    )
-                    Text(
-                        formatDate(post.ngayDang),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary
-                    )
-                }
-                Spacer(Modifier.weight(1f))
-                Surface(
-                    color = PrimaryLight,
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        post.category.uppercase(),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = PrimaryPink,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-            Text(
-                post.tieuDe,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = post.noiDung,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.DarkGray,
-                maxLines = 3
-            )
-
-            if (post.fileDinhKem != null) {
-                Surface(
-                    modifier = Modifier.padding(top = 10.dp),
-                    color = Color(0xFFF5F5F5),
-                    shape = MaterialTheme.shapes.small
-                ) {
-                    Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.AttachFile, null, Modifier.size(14.dp), tint = Color.Gray)
-                        Text(
-                            post.fileDinhKem,
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
-                    }
-                }
-            }
-
-            HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color(0xFFF0F0F0))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Row(
-                    Modifier.clickable { onLike() }.padding(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = if (post.isLiked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
-                        contentDescription = null,
-                        tint = if (post.isLiked) PrimaryPink else TextSecondary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        "${post.likeCount}",
-                        color = if (post.isLiked) PrimaryPink else TextSecondary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                Spacer(Modifier.width(24.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.ChatBubbleOutline, null, Modifier.size(20.dp), tint = TextSecondary)
-                    Spacer(Modifier.width(6.dp))
-                    Text("Bình luận", color = TextSecondary, fontSize = 14.sp)
-                }
-            }
-        }
-    }
-}
+// ────────────────────────────────────────────────
+// 2. MÀN HÌNH TẠO BÀI VIẾT MỚI
+// ────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -268,32 +164,53 @@ fun NewPostScreen(
 ) {
     var tieuDe by remember { mutableStateOf("") }
     var noiDung by remember { mutableStateOf("") }
+    var imageUrl by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("forum") }
-    var filePath by remember { mutableStateOf<String?>(null) }
     var expanded by remember { mutableStateOf(false) }
 
-    val categories = listOf("forum" to "Diễn đàn SV", "news" to "Bản tin", "market" to "Chợ SV", "job" to "Việc làm", "lost" to "Mất đồ")
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri -> filePath = uri?.path }
+    val categories = listOf(
+        "forum" to "Diễn đàn SV",
+        "news" to "Bản tin",
+        "market" to "Chợ SV",
+        "job" to "Việc làm",
+        "lost" to "Mất đồ"
+    )
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Tạo bài viết", fontWeight = FontWeight.Bold) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.Close, null) } },
+                title = { Text("Tạo bài viết mới", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) { Icon(Icons.Default.Close, null) }
+                },
                 actions = {
-                    TextButton(onClick = {
-                        if (tieuDe.isNotBlank()) {
-                            viewModel.createPost(tieuDe.trim(), noiDung.trim(), selectedCategory, filePath)
-                            onPostSuccess()
-                        }
-                    }) {
+                    TextButton(
+                        onClick = {
+                            if (tieuDe.isNotBlank() && noiDung.isNotBlank()) {
+                                viewModel.createPost(
+                                    tieuDe.trim(),
+                                    noiDung.trim(),
+                                    selectedCategory,
+                                    imageUrl.trim().ifBlank { null }
+                                )
+                                onPostSuccess()
+                            }
+                        },
+                        enabled = tieuDe.isNotBlank() && noiDung.isNotBlank()
+                    ) {
                         Text("ĐĂNG", fontWeight = FontWeight.Black, color = PrimaryPink)
                     }
                 }
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(20.dp).fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(20.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
             OutlinedTextField(
                 value = tieuDe,
                 onValueChange = { tieuDe = it },
@@ -302,15 +219,16 @@ fun NewPostScreen(
                 textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PrimaryPink,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
+                    unfocusedBorderColor = Color.LightGray
                 )
             )
 
             Spacer(Modifier.height(16.dp))
 
-            ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
                 OutlinedTextField(
                     value = categories.find { it.first == selectedCategory }?.second ?: "",
                     onValueChange = {},
@@ -321,10 +239,29 @@ fun NewPostScreen(
                 )
                 ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     categories.forEach { (key, label) ->
-                        DropdownMenuItem(text = { Text(label) }, onClick = { selectedCategory = key; expanded = false })
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                selectedCategory = key
+                                expanded = false
+                            }
+                        )
                     }
                 }
             }
+
+            Spacer(Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = imageUrl,
+                onValueChange = { imageUrl = it },
+                label = { Text("Link ảnh minh họa (URL)") },
+                placeholder = { Text("https://example.com/image.png") },
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = { Icon(Icons.Default.Link, contentDescription = null, tint = SecondaryBlue) },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
+            )
 
             Spacer(Modifier.height(16.dp))
 
@@ -332,33 +269,31 @@ fun NewPostScreen(
                 value = noiDung,
                 onValueChange = { noiDung = it },
                 placeholder = { Text("Nội dung bài viết...") },
-                modifier = Modifier.fillMaxWidth().weight(1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 200.dp),
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
+                    focusedContainerColor = Color(0xFFFBFBFB),
                     unfocusedContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
+                    unfocusedIndicatorColor = Color.Transparent
                 )
             )
 
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+            Spacer(Modifier.height(20.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { launcher.launch("*/*") }) {
-                    Icon(Icons.Default.AttachFile, null, tint = SecondaryBlue)
-                }
-                Text("Đính kèm tài liệu", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                if (filePath != null) {
-                    Spacer(Modifier.width(8.dp))
-                    Text("✓", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
-                }
-            }
+            Text(
+                "Lưu ý: Bài viết sau khi đăng sẽ ở trạng thái Chờ duyệt bởi Admin.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
+            )
         }
     }
 }
 
+// ────────────────────────────────────────────────
+// 3. MÀN HÌNH CHI TIẾT BÀI VIẾT
+// ────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -367,7 +302,6 @@ fun PostDetailScreen(
     postId: Long,
     onBack: () -> Unit
 ) {
-    // CHỈ gọi load dữ liệu khi ID thay đổi hoặc màn hình bắt đầu
     LaunchedEffect(postId) {
         viewModel.loadPostDetail(postId)
     }
@@ -391,7 +325,7 @@ fun PostDetailScreen(
         bottomBar = {
             Surface(
                 tonalElevation = 8.dp,
-                modifier = Modifier.imePadding() // Tự đẩy lên khi hiện bàn phím
+                modifier = Modifier.imePadding()
             ) {
                 Row(
                     modifier = Modifier
@@ -431,7 +365,6 @@ fun PostDetailScreen(
         }
     ) { padding ->
         if (post != null) {
-            // ĐOẠN LAZYCOLUMN ĐÃ SỬA LỖI TRÙNG KEY
             LazyColumn(
                 modifier = Modifier
                     .padding(padding)
@@ -439,7 +372,6 @@ fun PostDetailScreen(
                     .background(Color(0xFFF8F9FA)),
                 contentPadding = PaddingValues(bottom = 20.dp)
             ) {
-                // Sử dụng key duy nhất cho bài viết gốc bằng tiền tố "post_"
                 item(key = "post_header_${postId}") {
                     PostCard(
                         post = post!!,
@@ -463,7 +395,6 @@ fun PostDetailScreen(
                         }
                     }
                 } else {
-                    // Sử dụng key duy nhất cho từng bình luận bằng tiền tố "comment_"
                     items(
                         items = comments,
                         key = { comment -> "comment_${comment.id}" }
@@ -473,9 +404,123 @@ fun PostDetailScreen(
                 }
             }
         } else {
-            // Màn hình chờ tải dữ liệu
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PrimaryPink)
+            }
+        }
+    }
+}
+
+// ────────────────────────────────────────────────
+// 4. CÁC COMPONENT HIỂN THỊ (CARD & ITEM)
+// ────────────────────────────────────────────────
+
+@Composable
+fun PostCard(
+    post: Post,
+    onClick: () -> Unit,
+    onLike: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = post.tacGiaAvatar?.takeIf { it.isNotBlank() }
+                        ?: "https://ui-avatars.com/api/?name=${post.tacGiaTen.ifBlank { "SV" }}&background=random",
+                    contentDescription = null,
+                    modifier = Modifier.size(42.dp).clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = post.tacGiaTen.ifBlank { "Sinh viên ${post.tacGiaId}" },
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                    Text(
+                        formatDate(post.ngayDang),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                Surface(
+                    color = PrimaryLight,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        post.category.uppercase(),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = PrimaryPink,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Text(
+                post.tieuDe,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = post.noiDung,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.DarkGray,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            if (!post.fileDinhKem.isNullOrBlank()) {
+                Spacer(Modifier.height(12.dp))
+                AsyncImage(
+                    model = post.fileDinhKem,
+                    contentDescription = "Hình ảnh bài viết",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 250.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop,
+                    error = painterResource(id = android.R.drawable.ic_menu_gallery)
+                )
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color(0xFFF0F0F0))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.clickable { onLike() }.padding(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = if (post.isLiked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
+                        contentDescription = null,
+                        tint = if (post.isLiked) PrimaryPink else TextSecondary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "${post.likeCount}",
+                        color = if (post.isLiked) PrimaryPink else TextSecondary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Spacer(Modifier.width(24.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.ChatBubbleOutline, null, Modifier.size(20.dp), tint = TextSecondary)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Bình luận", color = TextSecondary, fontSize = 14.sp)
+                }
             }
         }
     }
@@ -505,9 +550,8 @@ fun CommentItem(comment: Comment) {
                 shape = RoundedCornerShape(0.dp, 16.dp, 16.dp, 16.dp)
             ) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                    // Trong CommentItem
                     Text(
-                        text = comment.tacGiaTen.ifBlank { "Sinh viên ${comment.tacGiaId}" },   // ← sửa
+                        text = comment.tacGiaTen.ifBlank { "Sinh viên ${comment.tacGiaId}" },
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 12.sp,
                         color = PrimaryPink

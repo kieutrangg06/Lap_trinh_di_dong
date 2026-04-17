@@ -14,10 +14,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.matestudy.data.entity.UserEntity
 import com.example.matestudy.ui.theme.*
 import com.example.matestudy.ui.viewmodel.AdminUserViewModel
@@ -33,7 +35,9 @@ fun AdminUsersScreen(viewModel: AdminUserViewModel) {
             .fillMaxSize()
             .background(Color(0xFFF8F9FA))
     ) {
-        // Thanh tìm kiếm
+        // ────────────────────────────────────────────────
+        // 1. THANH TÌM KIẾM
+        // ────────────────────────────────────────────────
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -51,26 +55,20 @@ fun AdminUsersScreen(viewModel: AdminUserViewModel) {
                     .height(52.dp),
                 shape = RoundedCornerShape(12.dp),
                 leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = null,
-                        tint = Color.Gray
-                    )
+                    Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray)
                 },
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFFA52A2A),   // Màu viền khi focus (đỏ đậm như app của bạn)
-                    unfocusedBorderColor = Color.LightGray,   // Màu viền khi không focus
+                    focusedBorderColor = Color(0xFFA52A2A),
+                    unfocusedBorderColor = Color.LightGray,
                     focusedLeadingIconColor = Color.Gray,
                     unfocusedLeadingIconColor = Color.Gray,
-                    // Bạn có thể thêm các màu khác nếu cần:
-                    // focusedTextColor = Color.Black,
-                    // unfocusedTextColor = Color.DarkGray,
-                    // cursorColor = Color(0xFFA52A2A),
                 )
             )
         }
 
-        // Header bảng
+        // ────────────────────────────────────────────────
+        // 2. HEADER BẢNG DANH SÁCH
+        // ────────────────────────────────────────────────
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -84,39 +82,16 @@ fun AdminUsersScreen(viewModel: AdminUserViewModel) {
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "SINH VIÊN",
-                    modifier = Modifier.weight(1.6f),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    color = Color.DarkGray
-                )
-                Text(
-                    text = "NIÊN KHÓA",
-                    modifier = Modifier.weight(0.9f),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    color = Color.DarkGray
-                )
-                Text(
-                    text = "TRẠNG THÁI",
-                    modifier = Modifier.weight(1f),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    color = Color.DarkGray
-                )
-                Text(
-                    text = "HÀNH ĐỘNG",
-                    modifier = Modifier.weight(0.9f),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    color = Color.DarkGray,
-                    textAlign = TextAlign.End
-                )
+                Text("SINH VIÊN", modifier = Modifier.weight(1.6f), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.DarkGray)
+                Text("NIÊN KHÓA", modifier = Modifier.weight(0.9f), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.DarkGray)
+                Text("TRẠNG THÁI", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.DarkGray)
+                Text("HÀNH ĐỘNG", modifier = Modifier.weight(0.9f), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.DarkGray, textAlign = TextAlign.End)
             }
         }
 
-        // Danh sách người dùng
+        // ────────────────────────────────────────────────
+        // 3. DANH SÁCH NGƯỜI DÙNG
+        // ────────────────────────────────────────────────
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -134,6 +109,10 @@ fun AdminUsersScreen(viewModel: AdminUserViewModel) {
         }
     }
 }
+
+// ────────────────────────────────────────────────
+// 4. THÀNH PHẦN HIỂN THỊ DÒNG NGƯỜI DÙNG
+// ────────────────────────────────────────────────
 
 @Composable
 fun UserAdminRow(
@@ -153,23 +132,26 @@ fun UserAdminRow(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Cột Sinh viên (Avatar + Thông tin)
             Row(
                 modifier = Modifier.weight(1.6f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    modifier = Modifier.size(48.dp).clip(CircleShape),
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape),
                     color = Color(0xFFE0E0E0)
                 ) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = null,
-                        modifier = Modifier.padding(10.dp),
-                        tint = Color.White
+                    AsyncImage(
+                        model = user.anhDaiDien?.takeIf { it.isNotBlank() } ?: "https://via.placeholder.com/150",
+                        contentDescription = "Avatar của ${user.tenDangNhap}",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
                 }
+
                 Spacer(Modifier.width(12.dp))
+
                 Column {
                     Text(
                         text = user.tenDangNhap,
@@ -184,7 +166,6 @@ fun UserAdminRow(
                 }
             }
 
-            // Niên khóa
             Text(
                 text = "K${user.nienKhoa ?: ""}",
                 modifier = Modifier.weight(0.9f),
@@ -192,7 +173,6 @@ fun UserAdminRow(
                 color = Color.DarkGray
             )
 
-            // Trạng thái
             Box(modifier = Modifier.weight(1f)) {
                 val isActive = user.trangThai == "hoat_dong"
 
@@ -210,7 +190,6 @@ fun UserAdminRow(
                 }
             }
 
-            // Hành động
             Row(
                 modifier = Modifier.weight(0.9f),
                 horizontalArrangement = Arrangement.End,

@@ -7,7 +7,14 @@ import com.example.matestudy.data.remote.FirestoreDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 
-class ReviewRepository(private val firestore: FirestoreDataSource,private val thongBaoRepo: ThongBaoRepository) {
+class ReviewRepository(
+    private val firestore: FirestoreDataSource,
+    private val thongBaoRepo: ThongBaoRepository
+) {
+
+    // ────────────────────────────────────────────────
+    // 1. QUẢN LÝ ĐÁNH GIÁ (REVIEW)
+    // ────────────────────────────────────────────────
 
     suspend fun insertReview(review: ReviewEntity) {
         firestore.insertReview(review)
@@ -22,18 +29,24 @@ class ReviewRepository(private val firestore: FirestoreDataSource,private val th
     fun getReviewCount(monHocId: Long): Flow<Int> =
         firestore.getReviewCount(monHocId)
 
+    // ────────────────────────────────────────────────
+    // 2. ADMIN QUẢN TRỊ ĐÁNH GIÁ
+    // ────────────────────────────────────────────────
+
     fun getAllReviewsForAdmin(): Flow<List<ReviewEntity>> = firestore.getAllReviewsForAdmin()
 
+    fun getAllReviewsForAdminWithUser(): Flow<List<ReviewWithUser>> =
+        firestore.getAllReviewsForAdminWithUser()
+
     suspend fun approveReview(ngayDang: Long) {
-        // Tìm và update dựa trên timestamp (ngay_dang) làm định danh tạm thời nếu ID không có sẵn
-        val query = firestore.updateReviewStatus(ngayDang.toString(), "da_duyet")
+        firestore.updateReviewStatus(ngayDang.toString(), "da_duyet")
     }
 
     suspend fun approveReviewWithNotify(ngayDang: Long) {
         firestore.updateReviewStatus(ngayDang.toString(), "da_duyet")
 
-        // Lấy thông tin review để biết tác giả là ai
-        val query = firestore.getAllReviewsForAdmin().firstOrNull()?.find { it.ngay_dang == ngayDang }
+        val query =
+            firestore.getAllReviewsForAdmin().firstOrNull()?.find { it.ngay_dang == ngayDang }
         query?.let {
             thongBaoRepo.createThongBao(
                 ThongBaoEntity(
@@ -41,7 +54,7 @@ class ReviewRepository(private val firestore: FirestoreDataSource,private val th
                     tieuDe = "Đánh giá được phê duyệt",
                     noiDung = "Đánh giá môn học của bạn đã được Admin phê duyệt.",
                     loai = "danh_gia",
-                    idLienQuan = it.mon_hoc_id // Hoặc ID review nếu có
+                    idLienQuan = it.mon_hoc_id
                 )
             )
         }
@@ -54,7 +67,4 @@ class ReviewRepository(private val firestore: FirestoreDataSource,private val th
     suspend fun deleteReview(ngayDang: Long) {
         firestore.deleteReview(ngayDang)
     }
-
-    fun getAllReviewsForAdminWithUser(): Flow<List<ReviewWithUser>> =
-        firestore.getAllReviewsForAdminWithUser()
 }

@@ -41,6 +41,10 @@ fun ChangePasswordScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
+            // ────────────────────────────────────────────────
+            // 1. HEADER & ICON
+            // ────────────────────────────────────────────────
             Spacer(Modifier.height(40.dp))
 
             Surface(
@@ -70,6 +74,9 @@ fun ChangePasswordScreen(
 
             Spacer(Modifier.height(32.dp))
 
+            // ────────────────────────────────────────────────
+            // 2. INPUT FORM
+            // ────────────────────────────────────────────────
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
@@ -77,14 +84,31 @@ fun ChangePasswordScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    PasswordField(value = oldPass, onValueChange = viewModel::onOldPasswordChange, label = "Mật khẩu hiện tại")
+                    PasswordField(
+                        value = oldPass,
+                        onValueChange = viewModel::onOldPasswordChange,
+                        label = "Mật khẩu hiện tại"
+                    )
                     Spacer(Modifier.height(16.dp))
 
-                    PasswordField(value = newPass, onValueChange = viewModel::onNewPasswordChange, label = "Mật khẩu mới")
-                    Text("Ít nhất 8 ký tự", style = MaterialTheme.typography.labelSmall, color = TextSecondary, modifier = Modifier.padding(start = 4.dp, top = 4.dp))
+                    PasswordField(
+                        value = newPass,
+                        onValueChange = viewModel::onNewPasswordChange,
+                        label = "Mật khẩu mới"
+                    )
+                    Text(
+                        "Ít nhất 8 ký tự",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary,
+                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                    )
 
                     Spacer(Modifier.height(16.dp))
-                    PasswordField(value = confirmNewPass, onValueChange = viewModel::onConfirmNewPasswordChange, label = "Xác nhận mật khẩu mới")
+                    PasswordField(
+                        value = confirmNewPass,
+                        onValueChange = viewModel::onConfirmNewPasswordChange,
+                        label = "Xác nhận mật khẩu mới"
+                    )
                 }
             }
 
@@ -92,6 +116,9 @@ fun ChangePasswordScreen(
                 Text(it, color = ErrorRed, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 16.dp))
             }
 
+            // ────────────────────────────────────────────────
+            // 3. ACTION BUTTONS
+            // ────────────────────────────────────────────────
             Spacer(Modifier.height(40.dp))
 
             Button(
@@ -100,11 +127,14 @@ fun ChangePasswordScreen(
                 shape = MaterialTheme.shapes.medium,
                 enabled = !isLoading
             ) {
-                if (isLoading) CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = Color.White
-                )
-                else Text("CẬP NHẬT MẬT KHẨU", fontWeight = FontWeight.Bold)
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color.White
+                    )
+                } else {
+                    Text("CẬP NHẬT MẬT KHẨU", fontWeight = FontWeight.Bold)
+                }
             }
 
             Spacer(Modifier.height(12.dp))

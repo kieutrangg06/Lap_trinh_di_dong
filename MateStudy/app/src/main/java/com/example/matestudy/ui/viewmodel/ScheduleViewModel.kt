@@ -18,15 +18,13 @@ class ScheduleViewModel(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    // ─────────────────────────────────────────
-    // 1. Trạng thái thời gian (tuần / tháng)
-    // ─────────────────────────────────────────
+    // ────────────────────────────────────────────────
+    // 1. STATE - TRẠNG THÁI THỜI GIAN & DỮ LIỆU
+    // ────────────────────────────────────────────────
+
     private val _currentMonth = MutableStateFlow(LocalDate.now())
     val currentMonth: StateFlow<LocalDate> = _currentMonth.asStateFlow()
 
-    // ─────────────────────────────────────────
-    // 2. Trạng thái dữ liệu chính
-    // ─────────────────────────────────────────
     private val _events = MutableStateFlow<List<Event>>(emptyList())
     val events: StateFlow<List<Event>> = _events.asStateFlow()
 
@@ -39,9 +37,10 @@ class ScheduleViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // ─────────────────────────────────────────
-    // 3. Khởi tạo & theo dõi user
-    // ─────────────────────────────────────────
+    // ────────────────────────────────────────────────
+    // 2. KHỞI TẠO & THEO DÕI USER
+    // ────────────────────────────────────────────────
+
     init {
         viewModelScope.launch {
             authRepository.getCurrentUserFlow().collect { user ->
@@ -52,29 +51,17 @@ class ScheduleViewModel(
         }
     }
 
-    // ─────────────────────────────────────────
-    // 4. Các hàm thay đổi phạm vi thời gian
-    // ─────────────────────────────────────────
-    fun changeMonth(delta: Int) {
-        _currentMonth.value = _currentMonth.value.plusMonths(delta.toLong())
-        viewModelScope.launch {
-            val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: return@launch
-            loadEvents(userId)
-        }
-    }
+    // ────────────────────────────────────────────────
+    // 3. XỬ LÝ TẢI & PHÂN TÍCH DỮ LIỆU SỰ KIỆN
+    // ────────────────────────────────────────────────
 
-    // ─────────────────────────────────────────
-    // 5. Tải & xử lý dữ liệu sự kiện
-    // ─────────────────────────────────────────
     private suspend fun loadEvents(sinhVienId: Long) {
         val lichList = scheduleRepository.getLichCaNhan(sinhVienId).firstOrNull() ?: emptyList()
         val eventList = mutableListOf<Event>()
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
         val dayMap = mapOf("2" to 1, "3" to 2, "4" to 3, "5" to 4, "6" to 5, "7" to 6, "CN" to 7)
 
         for (lich in lichList) {
-            // Lớp học chính thức
             if (lich.loai == "lop_chinh_thuc" && lich.monHocId != null) {
                 val mon = scheduleRepository.getMonHocById(lich.monHocId)
                 mon?.let {
@@ -94,9 +81,7 @@ class ScheduleViewModel(
                         tempDate = tempDate.plusDays(1)
                     }
                 }
-            }
-            // Sự kiện cá nhân
-            else if (lich.loai == "su_kien_rieng" && lich.skId != null) {
+            } else if (lich.loai == "su_kien_rieng" && lich.skId != null) {
                 val sk = scheduleRepository.getSkById(lich.skId)
                 sk?.let {
                     var tempDate = LocalDate.parse(it.ngayBatDau, formatter)
@@ -107,7 +92,6 @@ class ScheduleViewModel(
                     } else {
                         while (!tempDate.isAfter(endDate)) {
                             eventList.add(createEventFromSk(lich, it, tempDate))
-
                             when (it.lapLai) {
                                 "hang_ngay" -> tempDate = tempDate.plusDays(1)
                                 "hang_tuan" -> tempDate = tempDate.plusWeeks(1)
@@ -119,7 +103,6 @@ class ScheduleViewModel(
             }
         }
 
-        // Filter theo tháng hiện tại + buffer để hiển thị lịch grid
         val firstOfMonth = _currentMonth.value.withDayOfMonth(1)
         val lastOfMonth = firstOfMonth.plusMonths(1).minusDays(1)
 
@@ -129,9 +112,10 @@ class ScheduleViewModel(
         }
     }
 
-    // ─────────────────────────────────────────
-    // 6. Factory tạo Event object
-    // ─────────────────────────────────────────
+    // ────────────────────────────────────────────────
+    // 4. FACTORY METHODS (OBJECT MAPPING)
+    // ────────────────────────────────────────────────
+
     private fun createEventFromLich(
         lich: LichCaNhanEntity,
         tenMon: String,
@@ -173,9 +157,18 @@ class ScheduleViewModel(
         )
     }
 
-    // ─────────────────────────────────────────
-    // 7. Các hàm tương tác UI (public)
-    // ─────────────────────────────────────────
+    // ────────────────────────────────────────────────
+    // 5. PUBLIC ACTIONS - TƯƠNG TÁC UI & THỜI GIAN
+    // ────────────────────────────────────────────────
+
+    fun changeMonth(delta: Int) {
+        _currentMonth.value = _currentMonth.value.plusMonths(delta.toLong())
+        viewModelScope.launch {
+            val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: return@launch
+            loadEvents(userId)
+        }
+    }
+
     fun selectEvent(event: Event) {
         _selectedEvent.value = event
     }
@@ -183,6 +176,10 @@ class ScheduleViewModel(
     fun clearSelectedEvent() {
         _selectedEvent.value = null
     }
+
+    // ────────────────────────────────────────────────
+    // 6. CÁC THAO TÁC DỮ LIỆU (ADD, UPDATE, DELETE)
+    // ────────────────────────────────────────────────
 
     suspend fun addClass(monHocId: Long, color: String = "#3788d8") {
         val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: return
@@ -223,7 +220,6 @@ class ScheduleViewModel(
         )
 
         val skId = scheduleRepository.insertSk(sk)
-
         val lich = LichCaNhanEntity(
             sinhVienId = userId,
             loai = "su_kien_rieng",

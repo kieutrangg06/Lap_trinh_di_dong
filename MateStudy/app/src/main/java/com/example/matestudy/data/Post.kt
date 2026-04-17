@@ -7,7 +7,7 @@ import com.example.matestudy.data.dao.PostWithLikeCount
 data class Post(
     val id: Long = 0,
     val tacGiaId: Long,
-    val tacGiaTen: String = "",          // ← Tên đăng nhập (tenDangNhap)
+    val tacGiaTen: String = "",
     val tacGiaAvatar: String? = null,
     val tieuDe: String,
     val noiDung: String,
@@ -19,11 +19,10 @@ data class Post(
     val isLiked: Boolean = false
 )
 
-// Extension functions (đã có, chỉ giữ nguyên hoặc thêm comment)
 fun PostEntity.toPost(
     likeCount: Int = 0,
     isLiked: Boolean = false,
-    tacGiaTen: String = "" ,  // tên đăng nhập từ UserEntity.tenDangNhap
+    tacGiaTen: String = "" ,
     tacGiaAvatar: String? = null
 ): Post = Post(
     id = id,
@@ -42,7 +41,7 @@ fun PostEntity.toPost(
 
 fun PostWithLikeCount.toPost(
     isLiked: Boolean = false,
-    tacGiaTen: String = "",   // tên đăng nhập
+    tacGiaTen: String = "",
     tacGiaAvatar: String? = null
 ): Post = Post(
     id = id,
@@ -59,26 +58,25 @@ fun PostWithLikeCount.toPost(
     isLiked = isLiked
 )
 
-
 data class Comment(
     val id: Long = 0,
     val baiVietId: Long,
     val tacGiaId: Long,
     val tacGiaTen: String = "",
-    val tacGiaAvatar: String? = null,     // ← THÊM
+    val tacGiaAvatar: String? = null,
     val noiDung: String,
     val ngayTao: Long = System.currentTimeMillis()
 )
 
 fun CommentEntity.toComment(
     tacGiaTen: String = "",
-    tacGiaAvatar: String? = null          // ← THÊM
+    tacGiaAvatar: String? = null
 ): Comment = Comment(
     id = id,
     baiVietId = bai_viet_id,
     tacGiaId = tac_gia_id,
     tacGiaTen = tacGiaTen,
-    tacGiaAvatar = tacGiaAvatar,          // ← THÊM
+    tacGiaAvatar = tacGiaAvatar,
     noiDung = noi_dung,
     ngayTao = ngay_tao
 )

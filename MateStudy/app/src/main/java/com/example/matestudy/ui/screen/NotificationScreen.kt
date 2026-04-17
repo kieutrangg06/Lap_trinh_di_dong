@@ -6,10 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.Assignment
-import androidx.compose.material.icons.filled.StarHalf
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +31,15 @@ fun NotificationScreen(
 ) {
     val thongBaos by viewModel.thongBaos.collectAsState()
     val unreadCount by viewModel.unreadCount.collectAsState()
+    var selectedTab by remember { mutableStateOf("all") }
+
+    val filteredThongBaos = remember(thongBaos, selectedTab) {
+        when (selectedTab) {
+            "bai_viet" -> thongBaos.filter { it.loai == "bai_viet" }
+            "danh_gia" -> thongBaos.filter { it.loai == "danh_gia" }
+            else -> thongBaos
+        }
+    }
 
     Scaffold(
         containerColor = BackgroundGradientEnd,
@@ -52,31 +58,49 @@ fun NotificationScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            // Filter Row
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                SuggestionChip(
-                    onClick = { },
-                    label = { Text("Tất cả ($unreadCount)") },
-                    border = null,
-                    colors = SuggestionChipDefaults.suggestionChipColors(containerColor = PrimaryPink, labelColor = Color.White)
+                FilterChip(
+                    selected = selectedTab == "all",
+                    onClick = { selectedTab = "all" },
+                    label = { Text("Tất cả") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = PrimaryPink,
+                        selectedLabelColor = Color.White
+                    )
                 )
-                SuggestionChip(onClick = { }, label = { Text("Bài viết") })
-                SuggestionChip(onClick = { }, label = { Text("Đánh giá") })
+                FilterChip(
+                    selected = selectedTab == "bai_viet",
+                    onClick = { selectedTab = "bai_viet" },
+                    label = { Text("Bài viết") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = PrimaryPink,
+                        selectedLabelColor = Color.White
+                    )
+                )
+                FilterChip(
+                    selected = selectedTab == "danh_gia",
+                    onClick = { selectedTab = "danh_gia" },
+                    label = { Text("Đánh giá") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = PrimaryPink,
+                        selectedLabelColor = Color.White
+                    )
+                )
             }
 
-            if (thongBaos.isEmpty()) {
+            if (filteredThongBaos.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.NotificationsActive, null, Modifier.size(64.dp), tint = Color.LightGray)
-                        Text("Không có thông báo mới", color = TextSecondary, modifier = Modifier.padding(top = 16.dp))
+                        Text("Không có thông báo nào", color = TextSecondary, modifier = Modifier.padding(top = 16.dp))
                     }
                 }
             } else {
                 LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
-                    items(thongBaos) { tb ->
+                    items(filteredThongBaos) { tb ->
                         NotificationItem(
                             thongBao = tb,
                             onClick = {
@@ -98,7 +122,6 @@ fun NotificationScreen(
 fun NotificationItem(thongBao: ThongBaoEntity, onClick: () -> Unit) {
     val formatter = remember { SimpleDateFormat("HH:mm, dd/MM", Locale.getDefault()) }
     val isUnread = !thongBao.daDoc
-
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp).clickable(onClick = onClick),
         shape = MaterialTheme.shapes.medium,
@@ -118,15 +141,12 @@ fun NotificationItem(thongBao: ThongBaoEntity, onClick: () -> Unit) {
                     tint = if (thongBao.loai == "bai_viet") Color(0xFF1E88E5) else Color(0xFF43A047)
                 )
             }
-
             Spacer(Modifier.width(16.dp))
-
             Column(modifier = Modifier.weight(1f)) {
                 Text(thongBao.tieuDe, fontWeight = if (isUnread) FontWeight.Bold else FontWeight.Medium, fontSize = 15.sp)
                 Text(thongBao.noiDung, style = MaterialTheme.typography.bodySmall, color = TextSecondary, maxLines = 2)
                 Text(formatter.format(Date(thongBao.ngayTao)), style = MaterialTheme.typography.labelSmall, color = Color.LightGray, modifier = Modifier.padding(top = 4.dp))
             }
-
             if (isUnread) {
                 Icon(Icons.Default.Circle, null, Modifier.size(10.dp).padding(top = 4.dp), tint = PrimaryPink)
             }

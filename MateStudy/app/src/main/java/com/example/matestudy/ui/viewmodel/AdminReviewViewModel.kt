@@ -14,7 +14,7 @@ data class MonHocWithReviews(
     val tenMonHoc: String,
     val averageRating: Double?,
     val reviewCount: Int,
-    val reviews: List<ReviewWithUser>   // ← Đổi từ ReviewEntity thành ReviewWithUser
+    val reviews: List<ReviewWithUser>
 )
 
 class AdminReviewViewModel(
@@ -22,20 +22,21 @@ class AdminReviewViewModel(
     private val scheduleRepo: ScheduleRepository
 ) : ViewModel() {
 
-    // Thành:
     private val _allReviews = reviewRepo.getAllReviewsForAdminWithUser()
     private val _filterStatus = MutableStateFlow("Tất cả")
     val filterStatus = _filterStatus.asStateFlow()
-
     private val _searchQuery = MutableStateFlow("")
 
+    // ────────────────────────────────────────────────
+    // 1. LOGIC XỬ LÝ DỮ LIỆU (COMBINE FLOWS)
+    // ────────────────────────────────────────────────
+
     val filteredMonHocWithReviews = combine(
-        _allReviews,      // Flow<List<ReviewWithUser>>
+        _allReviews,
         _filterStatus,
         _searchQuery
     ) { reviewsWithUser, status, query ->
 
-        // 1. Lọc theo trạng thái
         val filteredReviews = if (status == "Tất cả") {
             reviewsWithUser
         } else {
@@ -49,22 +50,18 @@ class AdminReviewViewModel(
             }
         }
 
-        // 2. Nhóm theo môn học
         val grouped = filteredReviews.groupBy { it.review.mon_hoc_id }
 
         grouped.mapNotNull { (monId, revs) ->
             if (monId == null) return@mapNotNull null
 
-            // Lấy tên môn học
             val tenMon = scheduleRepo.getMonHocById(monId)?.tenMon
                 ?: "Môn học không xác định"
 
-            // Lọc theo từ khóa tìm kiếm (tên môn)
             if (query.isNotBlank() && !tenMon.contains(query, ignoreCase = true)) {
                 return@mapNotNull null
             }
 
-            // Tính điểm trung bình chỉ từ các đánh giá "Đã duyệt"
             val avg = revs.filter { it.review.trang_thai == "da_duyet" && it.review.diem_sao != null }
                 .mapNotNull { it.review.diem_sao?.toDouble() }
                 .average()
@@ -84,6 +81,10 @@ class AdminReviewViewModel(
         emptyList()
     )
 
+    // ────────────────────────────────────────────────
+    // 2. CÁC HÀM CẬP NHẬT TRẠNG THÁI UI
+    // ────────────────────────────────────────────────
+
     fun setFilter(status: String) {
         _filterStatus.value = status
     }
@@ -91,6 +92,10 @@ class AdminReviewViewModel(
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
     }
+
+    // ────────────────────────────────────────────────
+    // 3. CÁC THAO TÁC XỬ LÝ ĐÁNH GIÁ (REPOSITORY)
+    // ────────────────────────────────────────────────
 
     fun approveReview(ngayDang: Long) = viewModelScope.launch {
         reviewRepo.approveReviewWithNotify(ngayDang)

@@ -42,7 +42,6 @@ fun AddEventScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    // Khởi tạo State (Điền dữ liệu cũ nếu là chế độ Sửa)
     var tieuDe by remember { mutableStateOf(eventToEdit?.title ?: "") }
     var diaDiem by remember { mutableStateOf(eventToEdit?.location ?: "") }
     var lapLai by remember { mutableStateOf(eventToEdit?.repeat ?: "khong") }
@@ -72,7 +71,9 @@ fun AddEventScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
-            // --- THÔNG TIN CHI TIẾT ---
+            // ────────────────────────────────────────────────
+            // 1. THÔNG TIN CHI TIẾT
+            // ────────────────────────────────────────────────
             Text("Chi tiết sự kiện", style = MaterialTheme.typography.titleMedium, color = PrimaryPink)
 
             OutlinedTextField(
@@ -89,7 +90,9 @@ fun AddEventScreen(
                 leadingIcon = { Icon(Icons.Default.LocationOn, null) }
             )
 
-            // --- CHỌN MÀU SẮC ---
+            // ────────────────────────────────────────────────
+            // 2. CHỌN MÀU SẮC
+            // ────────────────────────────────────────────────
             Spacer(Modifier.height(20.dp))
             Text("Màu sắc hiển thị", style = MaterialTheme.typography.titleMedium, color = PrimaryPink)
             Row(
@@ -118,7 +121,9 @@ fun AddEventScreen(
                 }
             }
 
-            // --- THỜI GIAN ---
+            // ────────────────────────────────────────────────
+            // 3. THỜI GIAN
+            // ────────────────────────────────────────────────
             Spacer(Modifier.height(16.dp))
             Text("Thời gian", style = MaterialTheme.typography.titleMedium, color = PrimaryPink)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
@@ -130,20 +135,23 @@ fun AddEventScreen(
                 TimePickerField("Kết thúc", selectedGioKt, Modifier.weight(1f)) { selectedGioKt = it }
             }
 
-            // --- CHẾ ĐỘ LẶP LẠI (QUAN TRỌNG) ---
+            // ────────────────────────────────────────────────
+            // 4. CHẾ ĐỘ LẶP LẠI
+            // ────────────────────────────────────────────────
             Spacer(Modifier.height(24.dp))
             Text("Lặp lại", style = MaterialTheme.typography.titleMedium, color = PrimaryPink)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Tận dụng hàm RepeatOption đã viết ở file trước
                 RepeatOption("Không", lapLai == "khong") { lapLai = "khong" }
                 RepeatOption("Hàng ngày", lapLai == "hang_ngay") { lapLai = "hang_ngay" }
                 RepeatOption("Hàng tuần", lapLai == "hang_tuan") { lapLai = "hang_tuan" }
             }
 
-            // --- NÚT LƯU ---
+            // ────────────────────────────────────────────────
+            // 5. NÚT XỬ LÝ (LƯU/CẬP NHẬT)
+            // ────────────────────────────────────────────────
             Spacer(Modifier.height(40.dp))
             Button(
                 onClick = {
@@ -180,6 +188,10 @@ fun AddEventScreen(
     }
 }
 
+// ────────────────────────────────────────────────
+// 6. COMPONENTS HỖ TRỢ
+// ────────────────────────────────────────────────
+
 @Composable
 fun DatePickerField(label: String, date: LocalDate, modifier: Modifier, onDateSelected: (LocalDate) -> Unit) {
     val context = LocalContext.current
@@ -194,8 +206,12 @@ fun DatePickerField(label: String, date: LocalDate, modifier: Modifier, onDateSe
             }, date.year, date.monthValue - 1, date.dayOfMonth)
             picker.show()
         },
-        enabled = false, // Vô hiệu hóa gõ phím để buộc click
-        colors = OutlinedTextFieldDefaults.colors(disabledTextColor = TextPrimary, disabledBorderColor = MaterialTheme.colorScheme.outline, disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant)
+        enabled = false,
+        colors = OutlinedTextFieldDefaults.colors(
+            disabledTextColor = TextPrimary,
+            disabledBorderColor = MaterialTheme.colorScheme.outline,
+            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     )
 }
 
@@ -213,7 +229,10 @@ fun TimePickerField(label: String, time: LocalTime, modifier: Modifier, onTimeSe
             }, time.hour, time.minute, true).show()
         },
         enabled = false,
-        colors = OutlinedTextFieldDefaults.colors(disabledTextColor = TextPrimary, disabledBorderColor = MaterialTheme.colorScheme.outline)
+        colors = OutlinedTextFieldDefaults.colors(
+            disabledTextColor = TextPrimary,
+            disabledBorderColor = MaterialTheme.colorScheme.outline
+        )
     )
 }
 
@@ -223,6 +242,9 @@ fun RepeatOption(text: String, isSelected: Boolean, onClick: () -> Unit) {
         selected = isSelected,
         onClick = onClick,
         label = { Text(text) },
-        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = PrimaryPink, selectedLabelColor = Color.White)
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = PrimaryPink,
+            selectedLabelColor = Color.White
+        )
     )
 }

@@ -63,7 +63,9 @@ fun AdminRatingScreen(viewModel: AdminReviewViewModel) {
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
 
-            // Thanh tìm kiếm
+            // ────────────────────────────────────────────────
+            // 1. THANH TÌM KIẾM
+            // ────────────────────────────────────────────────
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = {
@@ -79,6 +81,9 @@ fun AdminRatingScreen(viewModel: AdminReviewViewModel) {
                 shape = RoundedCornerShape(12.dp)
             )
 
+            // ────────────────────────────────────────────────
+            // 2. DANH SÁCH NHÓM ĐÁNH GIÁ THEO MÔN
+            // ────────────────────────────────────────────────
             if (monHocGroups.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -116,7 +121,9 @@ fun MonHocReviewCard(
         onClick = { expanded = !expanded }
     ) {
         Column {
-            // Header môn học
+            // ────────────────────────────────────────────────
+            // 3. HEADER MÔN HỌC (TÓM TẮT ĐIỂM SỐ)
+            // ────────────────────────────────────────────────
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -136,7 +143,6 @@ fun MonHocReviewCard(
                     )
                 }
 
-                // Điểm trung bình + số lượng
                 Column(horizontalAlignment = Alignment.End) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -162,7 +168,9 @@ fun MonHocReviewCard(
                 )
             }
 
-            // Danh sách đánh giá khi mở rộng
+            // ────────────────────────────────────────────────
+            // 4. DANH SÁCH CHI TIẾT ĐÁNH GIÁ (KHI MỞ RỘNG)
+            // ────────────────────────────────────────────────
             AnimatedVisibility(visible = expanded) {
                 Column(
                     modifier = Modifier
@@ -178,7 +186,7 @@ fun MonHocReviewCard(
                     } else {
                         group.reviews.forEach { reviewWithUser ->
                             ReviewDetailCard(
-                                reviewWithUser = reviewWithUser,           // ← đổi
+                                reviewWithUser = reviewWithUser,
                                 onApprove = { viewModel.approveReview(reviewWithUser.review.ngay_dang) },
                                 onHide = { viewModel.hideReview(reviewWithUser.review.ngay_dang) },
                                 onDelete = { viewModel.deleteReview(reviewWithUser.review.ngay_dang) }
@@ -199,7 +207,7 @@ fun ReviewDetailCard(
     onHide: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val review = reviewWithUser.review      // tiện lợi
+    val review = reviewWithUser.review
     val tenDangNhap = reviewWithUser.tenDangNhap
     val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
 
@@ -212,14 +220,16 @@ fun ReviewDetailCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            // Tên sinh viên + thời gian
+            // ────────────────────────────────────────────────
+            // 5. THÔNG TIN SINH VIÊN & NỘI DUNG ĐÁNH GIÁ
+            // ────────────────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Sinh viên: @$tenDangNhap",  // Sau này có thể thay bằng tên thật nếu join User
+                    text = "Sinh viên: @$tenDangNhap",
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp
                 )
@@ -233,7 +243,6 @@ fun ReviewDetailCard(
 
             Spacer(Modifier.height(8.dp))
 
-            // Rating sao
             Row(verticalAlignment = Alignment.CenterVertically) {
                 repeat(5) { index ->
                     Icon(
@@ -253,7 +262,6 @@ fun ReviewDetailCard(
 
             Spacer(Modifier.height(12.dp))
 
-            // Nội dung đánh giá
             Text(
                 text = review.noi_dung.ifBlank { "(Không có nội dung)" },
                 fontSize = 14.sp,
@@ -262,7 +270,9 @@ fun ReviewDetailCard(
 
             Spacer(Modifier.height(12.dp))
 
-            // Trạng thái + Nút hành động
+            // ────────────────────────────────────────────────
+            // 6. TRẠNG THÁI & CÁC NÚT THAO TÁC
+            // ────────────────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

@@ -61,9 +61,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onRegisterClick: () -> Unit, viewMod
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp), // Dùng Modifier để chỉnh kích thước
+                        modifier = Modifier.size(24.dp),
                         color = Color.White,
-                        strokeWidth = 2.dp // (Tùy chọn) Chỉnh độ dày của vòng quay cho mảnh hơn
+                        strokeWidth = 2.dp
                     )
                 } else {
                     Text("ĐĂNG NHẬP", fontWeight = FontWeight.Bold, fontSize = 16.sp)

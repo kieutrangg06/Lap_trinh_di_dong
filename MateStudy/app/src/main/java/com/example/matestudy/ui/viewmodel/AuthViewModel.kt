@@ -12,9 +12,10 @@ class AuthViewModel(
     private val repository: AuthRepository
 ) : ViewModel() {
 
-    // ────────────────────────────────────────────────────────────────
-    // 1. Trạng thái cốt lõi (authentication state)
-    // ────────────────────────────────────────────────────────────────
+    // ────────────────────────────────────────────────
+    // 1. STATE - TRẠNG THÁI XÁC THỰC & NGƯỜI DÙNG
+    // ────────────────────────────────────────────────
+
     val isLoggedIn: StateFlow<Boolean> = repository.getCurrentUserFlow()
         .map { it != null }
         .stateIn(
@@ -34,26 +35,26 @@ class AuthViewModel(
         }
     }
 
-    // ────────────────────────────────────────────────────────────────
-    // 2. Trạng thái UI chung (loading, error)
-    // ────────────────────────────────────────────────────────────────
+    // ────────────────────────────────────────────────
+    // 2. STATE - TRẠNG THÁI UI CHUNG
+    // ────────────────────────────────────────────────
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // ────────────────────────────────────────────────────────────────
-    // 3. Các field input cho các màn hình (Login / Register / Change Password)
-    // ────────────────────────────────────────────────────────────────
-    // Login fields
+    // ────────────────────────────────────────────────
+    // 3. STATE - DỮ LIỆU INPUT FORM
+    // ────────────────────────────────────────────────
+
     private val _emailOrUsername = MutableStateFlow("")
     val emailOrUsername: StateFlow<String> = _emailOrUsername.asStateFlow()
 
     private val _password = MutableStateFlow("")
     val password: StateFlow<String> = _password.asStateFlow()
 
-    // Register fields
     private val _registerUsername = MutableStateFlow("")
     val registerUsername: StateFlow<String> = _registerUsername.asStateFlow()
 
@@ -69,7 +70,6 @@ class AuthViewModel(
     private val _registerConfirmPassword = MutableStateFlow("")
     val registerConfirmPassword: StateFlow<String> = _registerConfirmPassword.asStateFlow()
 
-    // Change password fields
     private val _oldPassword = MutableStateFlow("")
     val oldPassword: StateFlow<String> = _oldPassword.asStateFlow()
 
@@ -79,9 +79,10 @@ class AuthViewModel(
     private val _confirmNewPassword = MutableStateFlow("")
     val confirmNewPassword: StateFlow<String> = _confirmNewPassword.asStateFlow()
 
-    // ────────────────────────────────────────────────────────────────
-    // 4. Các hàm onChange (cập nhật state khi người dùng nhập)
-    // ────────────────────────────────────────────────────────────────
+    // ────────────────────────────────────────────────
+    // 4. ON CHANGE HANDLERS
+    // ────────────────────────────────────────────────
+
     fun onEmailOrUsernameChange(value: String) {
         _emailOrUsername.value = value
         _error.value = null
@@ -124,9 +125,10 @@ class AuthViewModel(
         _confirmNewPassword.value = value
     }
 
-    // ────────────────────────────────────────────────────────────────
-    // 5. Các hàm hành động chính (business logic)
-    // ────────────────────────────────────────────────────────────────
+    // ────────────────────────────────────────────────
+    // 5. BUSINESS LOGIC - XỬ LÝ HÀNH ĐỘNG
+    // ────────────────────────────────────────────────
+
     fun login(onSuccess: () -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -206,63 +208,6 @@ class AuthViewModel(
         }
     }
 
-//    fun registerWithRole(role: String, onSuccess: () -> Unit) {
-//        viewModelScope.launch {
-//            _isLoading.value = true
-//            _error.value = null
-//
-//            val errors = mutableListOf<String>()
-//            val username = _registerUsername.value.trim()
-//            val email = _registerEmail.value.trim()
-//            val nienKhoaStr = _registerNienKhoa.value.trim()
-//            val pass = _registerPassword.value
-//            val confirmPass = _registerConfirmPassword.value
-//
-//            if (username.length < 4) errors.add("Tên đăng nhập phải ≥ 4 ký tự")
-//            if (!email.contains("@") || !email.contains(".")) errors.add("Email không hợp lệ")
-//            if (nienKhoaStr.length != 4 || nienKhoaStr.toIntOrNull() == null) {
-//                errors.add("Niên khóa phải là 4 số (VD: 2024)")
-//            }
-//            if (pass.length < 8) errors.add("Mật khẩu phải ≥ 8 ký tự")
-//            if (pass != confirmPass) errors.add("Xác nhận mật khẩu không khớp")
-//
-//            if (errors.isNotEmpty()) {
-//                _error.value = errors.joinToString("\n")
-//                _isLoading.value = false
-//                return@launch
-//            }
-//
-//            try {
-//                if (repository.findUserByUsernameOrEmail(username) != null) {
-//                    _error.value = "Tên đăng nhập đã tồn tại"
-//                    return@launch
-//                }
-//                if (repository.findUserByUsernameOrEmail(email) != null) {
-//                    _error.value = "Email đã được sử dụng"
-//                    return@launch
-//                }
-//
-//                val newUser = UserEntity(
-//                    id = System.currentTimeMillis(),
-//                    tenDangNhap = username,
-//                    email = email,
-//                    matKhau = pass,
-//                    nienKhoa = nienKhoaStr.toIntOrNull(),
-//                    vaiTro = role,
-//                    trangThai = "hoat_dong",
-//                    anhDaiDien = null
-//                )
-//
-//                repository.saveUser(newUser)
-//                onSuccess()
-//            } catch (e: Exception) {
-//                _error.value = "Đăng ký thất bại: ${e.message}"
-//            } finally {
-//                _isLoading.value = false
-//            }
-//        }
-//    }
-
     fun changePassword(onSuccess: () -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -305,12 +250,11 @@ class AuthViewModel(
         }
     }
 
-    // Trong AuthViewModel.kt
     fun updateProfile(
         newUsername: String,
         newEmail: String,
         newNienKhoa: Int?,
-        newAvatarUrl: String?          // ← Đổi thành newAvatarUrl cho rõ ràng
+        newAvatarUrl: String?
     ) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -323,7 +267,6 @@ class AuthViewModel(
                         return@launch
                     }
 
-                // Validation
                 if (newUsername.trim().length < 4) {
                     _error.value = "Tên đăng nhập phải từ 4 ký tự trở lên"
                     return@launch
@@ -341,15 +284,12 @@ class AuthViewModel(
                 )
 
                 repository.updateUser(updatedEntity)
-
-                // Cập nhật lại session để UI refresh ngay lập tức
                 repository.loginToSession(updatedEntity)
 
                 _error.value = null
 
             } catch (e: Exception) {
                 _error.value = "Cập nhật thất bại: ${e.message}"
-                e.printStackTrace()
             } finally {
                 _isLoading.value = false
             }
@@ -363,9 +303,10 @@ class AuthViewModel(
         }
     }
 
-    // ────────────────────────────────────────────────────────────────
-    // 6. Hàm hỗ trợ (private helpers)
-    // ────────────────────────────────────────────────────────────────
+    // ────────────────────────────────────────────────
+    // 6. HELPER FUNCTIONS
+    // ────────────────────────────────────────────────
+
     private fun clearAllFields() {
         _emailOrUsername.value = ""
         _password.value = ""

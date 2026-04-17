@@ -24,7 +24,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MateStudyTheme {
-                // AuthViewModel dùng chung cho toàn app
                 val authViewModel: AuthViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {

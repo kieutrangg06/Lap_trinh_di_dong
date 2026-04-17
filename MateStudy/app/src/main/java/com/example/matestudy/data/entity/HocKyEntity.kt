@@ -3,14 +3,12 @@ package com.example.matestudy.data.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-// hoc_ky
 @Entity(tableName = "hoc_ky")
 data class HocKyEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val ten_hoc_ky: String = ""             // default empty
+    val ten_hoc_ky: String = ""
 )
 
-// mon_hoc
 @Entity(tableName = "mon_hoc")
 data class MonHocEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -25,7 +23,6 @@ data class MonHocEntity(
     val hocKyId: Long? = null
 )
 
-// lich_ca_nhan
 @Entity(tableName = "lich_ca_nhan")
 data class LichCaNhanEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

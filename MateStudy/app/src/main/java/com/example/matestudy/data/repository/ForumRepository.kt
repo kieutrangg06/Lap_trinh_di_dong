@@ -15,7 +15,7 @@ class ForumRepository(
 ) {
 
     // ────────────────────────────────────────────────
-    // 1. Lấy bài viết + Tác giả + Avatar (Firebase Storage link)
+    // 1. Lấy bài viết + Tác giả + Avatar
     // ────────────────────────────────────────────────
 
     suspend fun getPostWithAuthor(postId: Long, currentUserId: Long): Post? {
@@ -28,7 +28,7 @@ class ForumRepository(
             likeCount = likeCount,
             isLiked = isLiked,
             tacGiaTen = author?.tenDangNhap ?: "Sinh viên ${entity.tac_gia_id}",
-            tacGiaAvatar = author?.anhDaiDien   // Link ảnh từ Firebase Storage
+            tacGiaAvatar = author?.anhDaiDien
         )
     }
 
@@ -43,7 +43,7 @@ class ForumRepository(
                     likeCount = likeCount,
                     isLiked = isLiked,
                     tacGiaTen = author?.tenDangNhap ?: "Sinh viên ${postEntity.tac_gia_id}",
-                    tacGiaAvatar = author?.anhDaiDien          // Avatar thật
+                    tacGiaAvatar = author?.anhDaiDien
                 )
             }
         }
@@ -89,7 +89,7 @@ class ForumRepository(
 
                 commentEntity.toComment(
                     tacGiaTen = author?.tenDangNhap ?: "Sinh viên ${commentEntity.tac_gia_id}",
-                    tacGiaAvatar = author?.anhDaiDien          // Avatar thật từ Firebase
+                    tacGiaAvatar = author?.anhDaiDien
                 )
             }
         }
@@ -113,7 +113,7 @@ class ForumRepository(
         }
 
     // ────────────────────────────────────────────────
-    // 4. Các hàm khác (không thay đổi nhiều)
+    // 4. Các hàm khác
     // ────────────────────────────────────────────────
 
     suspend fun getPostById(id: Long): PostEntity? = firestore.getPostById(id)

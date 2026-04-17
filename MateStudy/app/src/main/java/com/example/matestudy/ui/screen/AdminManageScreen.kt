@@ -34,14 +34,15 @@ fun AdminManageScreen(viewModel: AdminViewModel) {
     val selectedHocKy by viewModel.selectedHocKy.collectAsState(null)
     val searchQuery by viewModel.searchQuery.collectAsState("")
 
-    // Trạng thái điều hướng màn hình (Thay thế Dialog)
     var editingHocKy by remember { mutableStateOf<HocKyEntity?>(null) }
     var editingMonHoc by remember { mutableStateOf<MonHocEntity?>(null) }
     var isAddingHocKy by remember { mutableStateOf(false) }
     var isAddingMonHoc by remember { mutableStateOf(false) }
 
     when {
+        // ────────────────────────────────────────────────
         // 1. MÀN HÌNH FORM HỌC KỲ (THÊM/SỬA)
+        // ────────────────────────────────────────────────
         isAddingHocKy || editingHocKy != null -> {
             HocKyFormScreen(
                 hocKy = editingHocKy,
@@ -54,7 +55,9 @@ fun AdminManageScreen(viewModel: AdminViewModel) {
             )
         }
 
+        // ────────────────────────────────────────────────
         // 2. MÀN HÌNH FORM MÔN HỌC (THÊM/SỬA)
+        // ────────────────────────────────────────────────
         isAddingMonHoc || editingMonHoc != null -> {
             MonHocFormScreen(
                 monHoc = editingMonHoc,
@@ -68,7 +71,9 @@ fun AdminManageScreen(viewModel: AdminViewModel) {
             )
         }
 
+        // ────────────────────────────────────────────────
         // 3. MÀN HÌNH DANH SÁCH CHÍNH
+        // ────────────────────────────────────────────────
         else -> {
             Scaffold(
                 containerColor = BackgroundGradientEnd,
@@ -78,7 +83,6 @@ fun AdminManageScreen(viewModel: AdminViewModel) {
                             title = { Text("QUẢN TRỊ HỆ THỐNG", fontWeight = FontWeight.Black, fontSize = 18.sp) },
                             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
                         )
-                        // Thanh tìm kiếm + Dropdown lọc HK
                         Row(
                             Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -149,7 +153,10 @@ fun AdminManageScreen(viewModel: AdminViewModel) {
     }
 }
 
-// --- DROPDOWN LỌC HỌC KỲ ---
+// ────────────────────────────────────────────────
+// 4. COMPONENTS FORM & DROPDOWN
+// ────────────────────────────────────────────────
+
 @Composable
 fun HocKyFilterDropdown(
     hocKyList: List<HocKyEntity>,
@@ -181,7 +188,6 @@ fun HocKyFilterDropdown(
     }
 }
 
-// --- FORM MÔN HỌC (SỬ DỤNG CALENDAR & CLOCK) ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MonHocFormScreen(monHoc: MonHocEntity?, hocKyId: Long, onSave: (MonHocEntity) -> Unit, onCancel: () -> Unit) {
@@ -199,7 +205,6 @@ fun MonHocFormScreen(monHoc: MonHocEntity?, hocKyId: Long, onSave: (MonHocEntity
     var showTimePicker by remember { mutableStateOf(false) }
     var isGioKetThuc by remember { mutableStateOf(false) }
 
-    // Logic DatePicker (Lịch)
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState()
         DatePickerDialog(
@@ -216,7 +221,6 @@ fun MonHocFormScreen(monHoc: MonHocEntity?, hocKyId: Long, onSave: (MonHocEntity
         ) { DatePicker(state = datePickerState) }
     }
 
-    // Logic TimePicker (Đồng hồ)
     if (showTimePicker) {
         val timePickerState = rememberTimePickerState(is24Hour = true)
         AlertDialog(
@@ -271,12 +275,20 @@ fun MonHocFormScreen(monHoc: MonHocEntity?, hocKyId: Long, onSave: (MonHocEntity
             Spacer(Modifier.height(12.dp))
             Button(
                 onClick = {
-                    onSave(MonHocEntity(
-                        id = monHoc?.id ?: 0L, tenMon = tenMon, tenGv = tenGv,
-                        diaDiem = diaDiem, thu = thu, gioBatDau = gioBd,
-                        gioKetThuc = gioKt, ngayBatDau = ngayBd, ngayKetThuc = ngayKt,
-                        hocKyId = hocKyId
-                    ))
+                    if (tenMon.isNotBlank()) {
+                        onSave(MonHocEntity(
+                            id = monHoc?.id ?: 0L,
+                            tenMon = tenMon,
+                            tenGv = tenGv,
+                            diaDiem = diaDiem,
+                            thu = thu,
+                            gioBatDau = gioBd,
+                            gioKetThuc = gioKt,
+                            ngayBatDau = ngayBd,
+                            ngayKetThuc = ngayKt,
+                            hocKyId = hocKyId
+                        ))
+                    }
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp)
             ) { Text("LƯU DỮ LIỆU") }
@@ -284,7 +296,6 @@ fun MonHocFormScreen(monHoc: MonHocEntity?, hocKyId: Long, onSave: (MonHocEntity
     }
 }
 
-// --- FORM HỌC KỲ ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HocKyFormScreen(hocKy: HocKyEntity?, onSave: (HocKyEntity) -> Unit, onCancel: () -> Unit) {
@@ -300,14 +311,24 @@ fun HocKyFormScreen(hocKy: HocKyEntity?, onSave: (HocKyEntity) -> Unit, onCancel
         Column(Modifier.padding(padding).padding(20.dp)) {
             AdminTextField("Tên học kỳ", tenHocKy) { tenHocKy = it }
             Spacer(Modifier.height(24.dp))
-            Button(onClick = { if (tenHocKy.isNotBlank()) onSave(hocKy?.copy(ten_hoc_ky = tenHocKy) ?: HocKyEntity(ten_hoc_ky = tenHocKy)) }, modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = {
+                    if (tenHocKy.isNotBlank()) {
+                        val entity = hocKy?.copy(ten_hoc_ky = tenHocKy) ?: HocKyEntity(ten_hoc_ky = tenHocKy)
+                        onSave(entity)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text("XÁC NHẬN")
             }
         }
     }
 }
 
-// --- CÁC THÀNH PHẦN UI HỖ TRỢ ---
+// ────────────────────────────────────────────────
+// 5. CÁC THÀNH PHẦN UI HỖ TRỢ
+// ────────────────────────────────────────────────
 
 @Composable
 fun AdminDateField(label: String, value: String, onClick: () -> Unit) {

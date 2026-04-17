@@ -7,11 +7,11 @@ import androidx.room.PrimaryKey
 data class UserEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val tenDangNhap: String = "",           // default empty string
-    val email: String = "",                 // default empty
-    val matKhau: String = "",               // default empty (dù không nên lưu plain text)
-    val nienKhoa: Int? = null,              // nullable → default null
-    val vaiTro: String = "sinh_vien",       // default là sinh_vien (phổ biến nhất)
-    val trangThai: String = "hoat_dong",    // default hoạt động
-    val anhDaiDien: String? = null          // nullable → default null
+    val tenDangNhap: String = "",
+    val email: String = "",
+    val matKhau: String = "",
+    val nienKhoa: Int? = null,
+    val vaiTro: String = "sinh_vien",
+    val trangThai: String = "hoat_dong",
+    val anhDaiDien: String? = null
 )

@@ -29,13 +29,11 @@ fun ProfileScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
-    // Các trường chỉnh sửa
     var editedUsername by remember { mutableStateOf("") }
     var editedEmail by remember { mutableStateOf("") }
     var editedNienKhoa by remember { mutableStateOf("") }
     var avatarUrlInput by remember { mutableStateOf("") }
 
-    // Load dữ liệu từ user hiện tại
     LaunchedEffect(currentUser) {
         editedUsername = currentUser.tenDangNhap
         editedEmail = currentUser.email
@@ -50,7 +48,9 @@ fun ProfileScreen(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Avatar Preview
+        // ────────────────────────────────────────────────
+        // 1. AVATAR PREVIEW
+        // ────────────────────────────────────────────────
         Box(contentAlignment = Alignment.BottomEnd) {
             Surface(
                 modifier = Modifier.size(130.dp),
@@ -84,7 +84,9 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(32.dp))
 
-        // Card chứa thông tin
+        // ────────────────────────────────────────────────
+        // 2. FORM THÔNG TIN CÁ NHÂN
+        // ────────────────────────────────────────────────
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.large,
@@ -112,7 +114,6 @@ fun ProfileScreen(
                     onValueChange = { editedNienKhoa = it }
                 )
 
-                // Link URL cho avatar
                 ProfileTextField(
                     label = "Link ảnh đại diện (URL)",
                     value = avatarUrlInput,
@@ -137,7 +138,9 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        // Hiển thị lỗi
+        // ────────────────────────────────────────────────
+        // 3. THÔNG BÁO LỖI & CÁC NÚT ĐIỀU KHIỂN
+        // ────────────────────────────────────────────────
         if (!error.isNullOrBlank()) {
             Text(
                 text = error!!,
@@ -148,14 +151,12 @@ fun ProfileScreen(
             Spacer(Modifier.height(8.dp))
         }
 
-        // Hai nút Hủy và Lưu
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             OutlinedButton(
                 onClick = {
-                    // Reset về giá trị gốc
                     editedUsername = currentUser.tenDangNhap
                     editedEmail = currentUser.email
                     editedNienKhoa = currentUser.nienKhoa?.toString() ?: ""
@@ -170,7 +171,6 @@ fun ProfileScreen(
             Button(
                 onClick = {
                     val finalAvatarUrl = avatarUrlInput.ifBlank { null }
-
                     viewModel.updateProfile(
                         newUsername = editedUsername,
                         newEmail = editedEmail,
@@ -196,7 +196,6 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // Nút đổi mật khẩu
         TextButton(onClick = onChangePasswordClick) {
             Icon(Icons.Default.VpnKey, null, Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
@@ -204,6 +203,10 @@ fun ProfileScreen(
         }
     }
 }
+
+// ────────────────────────────────────────────────
+// 4. COMPONENTS HỖ TRỢ
+// ────────────────────────────────────────────────
 
 @Composable
 fun ProfileTextField(

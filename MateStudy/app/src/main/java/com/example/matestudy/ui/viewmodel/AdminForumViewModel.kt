@@ -10,18 +10,19 @@ import kotlinx.coroutines.launch
 class AdminForumViewModel(private val repository: ForumRepository) : ViewModel() {
 
     private val _allPosts = repository.getAllPostsForAdmin()
-
     private val _filterStatus = MutableStateFlow("Tất cả")
     val filterStatus = _filterStatus.asStateFlow()
-
     private val _searchQuery = MutableStateFlow("")
+
+    // ────────────────────────────────────────────────
+    // 1. XỬ LÝ LOGIC LỌC VÀ TÌM KIẾM (FLOW)
+    // ────────────────────────────────────────────────
 
     val filteredPosts: StateFlow<List<Post>> = combine(
         _allPosts, _filterStatus, _searchQuery
     ) { posts, status, query ->
         var result = posts
 
-        // Lọc theo trạng thái
         if (status != "Tất cả") {
             result = result.filter {
                 when (status) {
@@ -33,7 +34,6 @@ class AdminForumViewModel(private val repository: ForumRepository) : ViewModel()
             }
         }
 
-        // Lọc theo từ khóa tìm kiếm
         if (query.isNotBlank()) {
             val lowerQuery = query.lowercase()
             result = result.filter {
@@ -45,6 +45,10 @@ class AdminForumViewModel(private val repository: ForumRepository) : ViewModel()
         result
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // ────────────────────────────────────────────────
+    // 2. CÁC HÀM CẬP NHẬT TRẠNG THÁI UI
+    // ────────────────────────────────────────────────
+
     fun setFilter(status: String) {
         _filterStatus.value = status
     }
@@ -53,9 +57,9 @@ class AdminForumViewModel(private val repository: ForumRepository) : ViewModel()
         _searchQuery.value = query
     }
 
-    fun deletePost(postId: Long) = viewModelScope.launch {
-        repository.deletePost(postId)
-    }
+    // ────────────────────────────────────────────────
+    // 3. CÁC THAO TÁC DỮ LIỆU (REPOSITORY)
+    // ────────────────────────────────────────────────
 
     fun approvePost(postId: Long) = viewModelScope.launch {
         repository.approvePostWithNotify(postId)
@@ -63,5 +67,9 @@ class AdminForumViewModel(private val repository: ForumRepository) : ViewModel()
 
     fun hidePost(postId: Long) = viewModelScope.launch {
         repository.hidePost(postId)
+    }
+
+    fun deletePost(postId: Long) = viewModelScope.launch {
+        repository.deletePost(postId)
     }
 }

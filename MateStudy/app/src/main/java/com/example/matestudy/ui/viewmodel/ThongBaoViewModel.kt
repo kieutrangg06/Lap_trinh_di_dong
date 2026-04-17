@@ -13,6 +13,10 @@ class ThongBaoViewModel(
     private val authRepo: AuthRepository
 ) : ViewModel() {
 
+    // ────────────────────────────────────────────────
+    // 1. STATE & USER CONTEXT
+    // ────────────────────────────────────────────────
+
     private val currentUserId = authRepo.getCurrentUserFlow()
         .map { it?.id ?: 0L }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
@@ -33,6 +37,10 @@ class ThongBaoViewModel(
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    // ────────────────────────────────────────────────
+    // 2. CÁC THAO TÁC XỬ LÝ THÔNG BÁO (REPOSITORY)
+    // ────────────────────────────────────────────────
 
     fun markAsRead(id: Long) {
         viewModelScope.launch {

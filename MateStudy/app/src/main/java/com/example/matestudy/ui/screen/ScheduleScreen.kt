@@ -60,17 +60,14 @@ fun ScheduleScreen(
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-            // 1. Header tháng + nút chuyển tháng
             MonthHeader(
                 currentMonth = currentMonth,
                 onPreviousMonth = { viewModel.changeMonth(-1) },
                 onNextMonth = { viewModel.changeMonth(1) }
             )
 
-            // 2. Hàng thứ trong tuần
             WeekDaysRow(daysOfWeek)
 
-            // 3. Grid lịch chính
             CalendarGrid(
                 currentMonth = currentMonth,
                 events = events,
@@ -79,7 +76,6 @@ fun ScheduleScreen(
         }
     }
 
-    // 4. Bottom Sheet chọn loại thêm mới
     AddOptionsBottomSheet(
         show = showAddOptions,
         onDismiss = { showAddOptions = false },
@@ -93,12 +89,10 @@ fun ScheduleScreen(
         }
     )
 
-    // 5. Dialog chi tiết sự kiện
     EventDetailDialog(
         event = selectedEvent,
         onDismiss = { viewModel.clearSelectedEvent() },
         onEdit = {
-            // TODO: truyền event sang màn edit (có thể qua ViewModel hoặc SavedStateHandle)
             viewModel.clearSelectedEvent()
             navController.navigate("edit_event")
         },
@@ -111,9 +105,10 @@ fun ScheduleScreen(
     )
 }
 
-// ─────────────────────────────────────────
-// Composable nhỏ - Header tháng
-// ─────────────────────────────────────────
+// ────────────────────────────────────────────────
+// 1. COMPONENT HEADER & WEEKDAYS
+// ────────────────────────────────────────────────
+
 @Composable
 private fun MonthHeader(
     currentMonth: LocalDate,
@@ -151,9 +146,6 @@ private fun MonthHeader(
     }
 }
 
-// ─────────────────────────────────────────
-// Composable nhỏ - Hàng thứ trong tuần
-// ─────────────────────────────────────────
 @Composable
 private fun WeekDaysRow(daysOfWeek: List<String>) {
     Row(
@@ -173,9 +165,10 @@ private fun WeekDaysRow(daysOfWeek: List<String>) {
     }
 }
 
-// ─────────────────────────────────────────
-// Composable chính - Grid lịch 7 cột
-// ─────────────────────────────────────────
+// ────────────────────────────────────────────────
+// 2. COMPONENT CALENDAR GRID
+// ────────────────────────────────────────────────
+
 @Composable
 private fun CalendarGrid(
     currentMonth: LocalDate,
@@ -183,7 +176,7 @@ private fun CalendarGrid(
     onSelectEvent: (com.example.matestudy.data.Event) -> Unit
 ) {
     val firstOfMonth = currentMonth.withDayOfMonth(1)
-    val firstDayOfWeek = (firstOfMonth.dayOfWeek.value % 7) // 0=CN, 1=T2, ..., 6=T7
+    val firstDayOfWeek = (firstOfMonth.dayOfWeek.value % 7)
     val daysInMonth = currentMonth.lengthOfMonth()
 
     LazyVerticalGrid(
@@ -199,7 +192,7 @@ private fun CalendarGrid(
 
             Box(
                 modifier = Modifier
-                    .aspectRatio(0.7f)           // Tỷ lệ phù hợp cho ô lịch
+                    .aspectRatio(0.7f)
                     .padding(1.dp)
                     .clip(RoundedCornerShape(4.dp))
                     .background(
@@ -209,10 +202,9 @@ private fun CalendarGrid(
                             else -> Color.Transparent
                         }
                     )
-                    .then(if (date != null) Modifier.clickable { /* có thể thêm logic click ô */ } else Modifier)
+                    .then(if (date != null) Modifier.clickable { } else Modifier)
             ) {
                 if (date != null) {
-                    // Số ngày
                     Text(
                         text = day.toString(),
                         modifier = Modifier
@@ -223,7 +215,6 @@ private fun CalendarGrid(
                         color = if (isToday) PrimaryPink else TextPrimary
                     )
 
-                    // Danh sách sự kiện trong ngày
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -296,9 +287,10 @@ private fun EventItem(
     }
 }
 
-// ─────────────────────────────────────────
-// Bottom Sheet chọn loại sự kiện thêm mới
-// ─────────────────────────────────────────
+// ────────────────────────────────────────────────
+// 3. DIALOGS & BOTTOM SHEETS
+// ────────────────────────────────────────────────
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddOptionsBottomSheet(
@@ -341,9 +333,6 @@ private fun AddOptionsBottomSheet(
     }
 }
 
-// ─────────────────────────────────────────
-// Dialog chi tiết sự kiện
-// ─────────────────────────────────────────
 @Composable
 private fun EventDetailDialog(
     event: com.example.matestudy.data.Event?,
@@ -357,31 +346,28 @@ private fun EventDetailDialog(
             title = { Text(it.title, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (it.teacher != null) {
-                        DetailRow(Icons.Default.Person, it.teacher!!)
-                    }
+                    if (it.teacher != null) DetailRow(Icons.Default.Person, it.teacher!!)
                     DetailRow(Icons.Default.LocationOn, it.location ?: "Trực tuyến")
                     DetailRow(Icons.Default.AccessTime, "${it.startTime} - ${it.endTime}")
                     DetailRow(Icons.Default.CalendarToday, it.date.toString())
                 }
             },
             confirmButton = {
-                Button(onClick = onEdit) {
-                    Text("Sửa")
+                if (it.loai == "su_kien_rieng") {
+                    Button(onClick = onEdit) { Text("Sửa") }
                 }
             },
             dismissButton = {
-                TextButton(onClick = onDelete) {
-                    Text("Xóa", color = ErrorRed)
-                }
+                TextButton(onClick = onDelete) { Text("Xóa", color = Color.Red) }
             }
         )
     }
 }
 
-// ─────────────────────────────────────────
-// Các Composable hỗ trợ nhỏ
-// ─────────────────────────────────────────
+// ────────────────────────────────────────────────
+// 4. CÁC COMPONENT HỖ TRỢ KHÁC
+// ────────────────────────────────────────────────
+
 @Composable
 private fun DetailRow(icon: ImageVector, text: String) {
     Row(

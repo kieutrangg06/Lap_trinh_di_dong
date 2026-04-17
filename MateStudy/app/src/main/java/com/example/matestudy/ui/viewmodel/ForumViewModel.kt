@@ -17,16 +17,66 @@ class ForumViewModel(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    // ─────────────────────────────────────────
-    // 1. State cơ bản & User hiện tại
-    // ─────────────────────────────────────────
+    // ────────────────────────────────────────────────
+    // 1. STATE & USER CONTEXT
+    // ────────────────────────────────────────────────
+
     private val currentUserId: StateFlow<Long> = authRepository.getCurrentUserFlow()
         .map { it?.id ?: 0L }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 
-    // ─────────────────────────────────────────
-    // 2. Danh sách bài viết (category + search)
-    // ─────────────────────────────────────────
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    // ────────────────────────────────────────────────
+    // 2. DANH SÁCH BÀI VIẾT (CATEGORY & SEARCH)
+    // ────────────────────────────────────────────────
+
+    private val _currentCategory = MutableStateFlow("all")
+    val currentCategory: StateFlow<String> = _currentCategory.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    val posts: StateFlow<List<Post>> = combine(_currentCategory, currentUserId) { cat, userId ->
+        cat to userId
+    }.flatMapLatest { (cat, userId) ->
+        when (cat) {
+            "all" -> forumRepository.getAllPosts(userId)
+            "featured" -> forumRepository.getFeaturedPosts(userId)
+            else -> forumRepository.getPostsByCategory(cat, userId)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val filteredPosts: StateFlow<List<Post>> = combine(posts, _searchQuery) { list, query ->
+        if (query.isBlank()) list
+        else list.filter {
+            it.tieuDe.contains(query, ignoreCase = true) ||
+                    it.noiDung.contains(query, ignoreCase = true)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun setCategory(category: String) {
+        _currentCategory.value = category
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
+    }
+
+    // ────────────────────────────────────────────────
+    // 3. CHI TIẾT BÀI VIẾT & BÌNH LUẬN
+    // ────────────────────────────────────────────────
+
+    private val _selectedPostId = MutableStateFlow<Long?>(null)
+    private val _selectedPost = MutableStateFlow<Post?>(null)
+    val selectedPost: StateFlow<Post?> = _selectedPost.asStateFlow()
+
+    val comments: StateFlow<List<Comment>> = _selectedPostId.flatMapLatest { id ->
+        if (id != null) forumRepository.getCommentsForPost(id)
+        else flowOf(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     fun loadPostDetail(postId: Long) {
         _selectedPostId.value = postId
         viewModelScope.launch {
@@ -39,91 +89,29 @@ class ForumViewModel(
             }
         }
     }
-    private val _currentCategory = MutableStateFlow("all")
-    val currentCategory: StateFlow<String> = _currentCategory.asStateFlow()
 
-    val posts: StateFlow<List<Post>> = combine(_currentCategory, currentUserId) { cat, userId ->
-        cat to userId
-    }.flatMapLatest { (cat, userId) ->
-        when (cat) {
-            "all" -> forumRepository.getAllPosts(userId)
-            "featured" -> forumRepository.getFeaturedPosts(userId)
-            else -> forumRepository.getPostsByCategory(cat, userId)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    // ────────────────────────────────────────────────
+    // 4. THAO TÁC DỮ LIỆU (POST, COMMENT, LIKE)
+    // ────────────────────────────────────────────────
 
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
-    val filteredPosts: StateFlow<List<Post>> = combine(posts, _searchQuery) { list, query ->
-        if (query.isBlank()) list
-        else list.filter {
-            it.tieuDe.contains(query, ignoreCase = true) ||
-                    it.noiDung.contains(query, ignoreCase = true)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    // ─────────────────────────────────────────
-    // 3. Chi tiết bài viết & Bình luận
-    // ─────────────────────────────────────────
-    private val _selectedPostId = MutableStateFlow<Long?>(null)
-
-    private val _selectedPost = MutableStateFlow<Post?>(null)
-    val selectedPost: StateFlow<Post?> = _selectedPost.asStateFlow()
-
-    val comments: StateFlow<List<Comment>> = _selectedPostId.flatMapLatest { id ->
-        if (id != null) forumRepository.getCommentsForPost(id)
-        else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    // ─────────────────────────────────────────
-    // 4. Trạng thái lỗi
-    // ─────────────────────────────────────────
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
-
-    // ─────────────────────────────────────────
-    // 5. Các hàm public - UI events
-    // ─────────────────────────────────────────
-    // Category & Search
-    fun setCategory(category: String) {
-        _currentCategory.value = category
-    }
-
-    fun onSearchQueryChange(query: String) {
-        _searchQuery.value = query
-    }
-
-
-    // Tạo bài viết
-    fun createPost(tieuDe: String, noiDung: String, category: String, filePath: String?) {
+    fun createPost(tieuDe: String, noiDung: String, category: String, imageUrl: String?) {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: 0L
-            if (userId == 0L) {
-                _error.value = "Vui lòng đăng nhập để đăng bài"
-                return@launch
-            }
-            if (tieuDe.isBlank() || noiDung.isBlank()) {
-                _error.value = "Tiêu đề và nội dung không được để trống"
-                return@launch
-            }
+            if (userId == 0L) return@launch
 
             val newPost = PostEntity(
                 tac_gia_id = userId,
                 tieu_de = tieuDe.trim(),
                 noi_dung = noiDung.trim(),
-                file_dinh_kem = filePath,
+                file_dinh_kem = imageUrl,
                 category = category,
-                trang_thai = "da_duyet",
+                trang_thai = "cho_duyet",
                 ngay_dang = System.currentTimeMillis()
             )
-
             forumRepository.createPost(newPost)
-            _error.value = null
         }
     }
 
-    // Bình luận
     fun addComment(postId: Long, noiDung: String) {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: 0L
@@ -138,12 +126,10 @@ class ForumViewModel(
                 noi_dung = noiDung.trim(),
                 ngay_tao = System.currentTimeMillis()
             )
-
             forumRepository.addComment(newComment)
         }
     }
 
-    // Like
     fun toggleLike(postId: Long) {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: 0L

@@ -10,9 +10,9 @@ data class ThongBaoEntity(
     val sinhVienId: Long = 0,
     val tieuDe: String = "",
     val noiDung: String = "",
-    val loai: String = "bai_viet",          // "bai_viet" hoặc "danh_gia" (thay vì enum để dễ mở rộng)
+    val loai: String = "bai_viet",
     val daDoc: Boolean = false,
-    val idLienQuan: Long? = null,           // id bài viết hoặc id đánh giá
-    val loaiLienQuan: String? = null,       // "post", "comment", "like", "review", ...
+    val idLienQuan: Long? = null,
+    val loaiLienQuan: String? = null,
     val ngayTao: Long = System.currentTimeMillis()
 )

@@ -37,6 +37,9 @@ fun ScaffoldWithBottomBarAndDrawer(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
+            // ────────────────────────────────────────────────
+            // 1. DRAWER SHEET CONTENT
+            // ────────────────────────────────────────────────
             ModalDrawerSheet(
                 drawerContainerColor = MaterialTheme.colorScheme.surface,
                 drawerTonalElevation = 0.dp
@@ -93,6 +96,9 @@ fun ScaffoldWithBottomBarAndDrawer(
         }
     ) {
         Scaffold(
+            // ────────────────────────────────────────────────
+            // 2. TOP APP BAR
+            // ────────────────────────────────────────────────
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
@@ -107,7 +113,6 @@ fun ScaffoldWithBottomBarAndDrawer(
                         }
                     },
                     actions = {
-                        // Icon chuông ở Top Bar (nếu muốn giữ)
                         IconButton(onClick = {
                             bottomNavController.navigate(BottomNavItem.Notification.route) {
                                 launchSingleTop = true
@@ -119,70 +124,52 @@ fun ScaffoldWithBottomBarAndDrawer(
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
                 )
             },
+            // ────────────────────────────────────────────────
+            // 3. BOTTOM NAVIGATION BAR
+            // ────────────────────────────────────────────────
             bottomBar = {
                 NavigationBar(
                     containerColor = Color.White,
                     tonalElevation = 8.dp
                 ) {
-                    if (isAdmin) {
-                        val adminItems = listOf(
+                    val navItems = if (isAdmin) {
+                        listOf(
                             BottomNavItem.AdminForum,
                             BottomNavItem.AdminStudyData,
                             BottomNavItem.AdminRating,
                             BottomNavItem.AdminUsers
                         )
-                        adminItems.forEach { item ->
-                            val selected = currentRoute == item.route
-                            NavigationBarItem(
-                                icon = { Icon(item.icon, contentDescription = item.title) },
-                                label = { Text(item.title, style = MaterialTheme.typography.labelSmall) },
-                                selected = selected,
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = PrimaryPink,
-                                    indicatorColor = Color(0xFFFFEBF2)
-                                ),
-                                onClick = {
-                                    bottomNavController.navigate(item.route) {
-                                        popUpTo(bottomNavController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            )
-                        }
                     } else {
-                        // ================== USER BOTTOM BAR ==================
-                        val userItems = listOf(
+                        listOf(
                             BottomNavItem.Home,
                             BottomNavItem.Schedule,
                             BottomNavItem.Rating,
                             BottomNavItem.Group,
-                            BottomNavItem.Notification,   // ← Đã thêm đúng
+                            BottomNavItem.Notification,
                             BottomNavItem.Profile
                         )
-                        userItems.forEach { item ->
-                            val selected = currentRoute == item.route
-                            NavigationBarItem(
-                                icon = { Icon(item.icon, contentDescription = item.title) },
-                                label = { Text(item.title, style = MaterialTheme.typography.labelSmall) },
-                                selected = selected,
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = PrimaryPink,
-                                    indicatorColor = Color(0xFFFFEBF2)
-                                ),
-                                onClick = {
-                                    bottomNavController.navigate(item.route) {
-                                        popUpTo(bottomNavController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
+                    }
+
+                    navItems.forEach { item ->
+                        val selected = currentRoute == item.route
+                        NavigationBarItem(
+                            icon = { Icon(item.icon, contentDescription = item.title) },
+                            label = { Text(item.title, style = MaterialTheme.typography.labelSmall) },
+                            selected = selected,
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = PrimaryPink,
+                                indicatorColor = Color(0xFFFFEBF2)
+                            ),
+                            onClick = {
+                                bottomNavController.navigate(item.route) {
+                                    popUpTo(bottomNavController.graph.findStartDestination().id) {
+                                        saveState = true
                                     }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                            )
-                        }
+                            }
+                        )
                     }
                 }
             }
@@ -191,6 +178,10 @@ fun ScaffoldWithBottomBarAndDrawer(
         }
     }
 }
+
+// ────────────────────────────────────────────────
+// 4. DRAWER ITEM COMPONENT
+// ────────────────────────────────────────────────
 
 @Composable
 fun DrawerItem(
