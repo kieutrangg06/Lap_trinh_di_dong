@@ -33,14 +33,8 @@ class ReviewRepository(
     // 2. ADMIN QUẢN TRỊ ĐÁNH GIÁ
     // ────────────────────────────────────────────────
 
-    fun getAllReviewsForAdmin(): Flow<List<ReviewEntity>> = firestore.getAllReviewsForAdmin()
-
     fun getAllReviewsForAdminWithUser(): Flow<List<ReviewWithUser>> =
         firestore.getAllReviewsForAdminWithUser()
-
-    suspend fun approveReview(ngayDang: Long) {
-        firestore.updateReviewStatus(ngayDang.toString(), "da_duyet")
-    }
 
     suspend fun approveReviewWithNotify(ngayDang: Long) {
         firestore.updateReviewStatus(ngayDang.toString(), "da_duyet")

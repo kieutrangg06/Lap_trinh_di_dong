@@ -52,14 +52,6 @@ class AdminUserViewModel(private val repository: AuthRepository) : ViewModel() {
         _searchQuery.value = query
     }
 
-    fun onStatusFilterChange(status: String) {
-        _filterStatus.value = status
-    }
-
-    fun onNienKhoaFilterChange(nk: String) {
-        _filterNienKhoa.value = nk
-    }
-
     // ────────────────────────────────────────────────
     // 3. CÁC THAO TÁC NGƯỜI DÙNG (REPOSITORY)
     // ────────────────────────────────────────────────

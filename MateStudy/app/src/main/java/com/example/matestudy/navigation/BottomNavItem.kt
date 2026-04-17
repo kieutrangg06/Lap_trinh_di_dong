@@ -13,7 +13,6 @@ sealed class BottomNavItem(
     object Home        : BottomNavItem("home",        "Diễn đàn",       Icons.Default.Forum)
     object Schedule    : BottomNavItem("schedule",    "Thời gian biểu", Icons.Default.CalendarMonth)
     object Rating      : BottomNavItem("rating",      "Đánh giá",       Icons.Default.Star)
-    object Group       : BottomNavItem("group",       "Nhóm học",       Icons.Default.Group)
     object Notification: BottomNavItem("notification","Thông báo",     Icons.Default.Notifications)
     object Profile     : BottomNavItem("profile",     "Cá nhân",        Icons.Default.Person)
 

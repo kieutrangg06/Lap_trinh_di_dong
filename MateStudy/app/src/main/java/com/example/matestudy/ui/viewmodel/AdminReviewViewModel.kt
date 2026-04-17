@@ -2,7 +2,6 @@ package com.example.matestudy.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.matestudy.data.entity.ReviewEntity
 import com.example.matestudy.data.entity.ReviewWithUser
 import com.example.matestudy.data.repository.ReviewRepository
 import com.example.matestudy.data.repository.ScheduleRepository

@@ -33,7 +33,6 @@ data class LichCaNhanEntity(
     val mauSac: String = "#3788d8"
 )
 
-// sk_ca_nhan
 @Entity(tableName = "sk_ca_nhan")
 data class SkCaNhanEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

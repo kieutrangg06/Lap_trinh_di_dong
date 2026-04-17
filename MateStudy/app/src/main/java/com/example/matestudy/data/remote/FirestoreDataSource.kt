@@ -98,19 +98,6 @@ class FirestoreDataSource {
             .toObject(UserEntity::class.java)
     }
 
-    fun getUserByIdFlow(userId: Long): Flow<UserEntity?> = callbackFlow {
-        val listener = db.collection("users")
-            .document(userId.toString())
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                trySend(snapshot?.toObject(UserEntity::class.java))
-            }
-        awaitClose { listener.remove() }
-    }
-
     suspend fun saveUser(user: UserEntity) {
         db.collection("users")
             .document(user.id.toString())
@@ -125,13 +112,6 @@ class FirestoreDataSource {
         db.collection("users")
             .document(user.id.toString())
             .set(user, SetOptions.merge())
-            .await()
-    }
-
-    suspend fun updateUserFields(userId: Long, fields: Map<String, Any?>) {
-        db.collection("users")
-            .document(userId.toString())
-            .update(fields)
             .await()
     }
 

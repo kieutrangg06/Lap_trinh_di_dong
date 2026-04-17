@@ -116,8 +116,6 @@ class ForumRepository(
     // 4. Các hàm khác
     // ────────────────────────────────────────────────
 
-    suspend fun getPostById(id: Long): PostEntity? = firestore.getPostById(id)
-
     suspend fun createPost(post: PostEntity): Long = firestore.insertPost(post)
 
     suspend fun addComment(comment: CommentEntity) {
@@ -135,13 +133,6 @@ class ForumRepository(
                 )
             )
         }
-    }
-
-    fun getLikeCount(postId: Long): Flow<Int> = firestore.getLikeCount(postId)
-
-    suspend fun isPostLiked(postId: Long, userId: Long): Boolean {
-        if (userId == 0L) return false
-        return firestore.getLikeByUser(postId, userId) != null
     }
 
     suspend fun toggleLike(postId: Long, userId: Long): Boolean {
@@ -183,10 +174,6 @@ class ForumRepository(
                 )
             )
         }
-    }
-
-    suspend fun approvePost(postId: Long) {
-        firestore.updatePostStatus(postId, "da_duyet")
     }
 
     suspend fun hidePost(postId: Long) {

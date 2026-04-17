@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.matestudy.data.entity.UserEntity
-import com.example.matestudy.ui.theme.*
 import com.example.matestudy.ui.viewmodel.AdminUserViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

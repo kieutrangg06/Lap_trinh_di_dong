@@ -144,7 +144,6 @@ fun ScaffoldWithBottomBarAndDrawer(
                             BottomNavItem.Home,
                             BottomNavItem.Schedule,
                             BottomNavItem.Rating,
-                            BottomNavItem.Group,
                             BottomNavItem.Notification,
                             BottomNavItem.Profile
                         )

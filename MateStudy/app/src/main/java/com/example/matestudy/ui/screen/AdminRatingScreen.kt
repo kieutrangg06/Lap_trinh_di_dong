@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.matestudy.data.entity.ReviewEntity
 import com.example.matestudy.data.entity.ReviewWithUser
 import com.example.matestudy.ui.theme.*
 import com.example.matestudy.ui.viewmodel.AdminReviewViewModel

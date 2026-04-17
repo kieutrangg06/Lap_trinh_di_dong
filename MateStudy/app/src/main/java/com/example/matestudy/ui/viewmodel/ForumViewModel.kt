@@ -8,7 +8,6 @@ import com.example.matestudy.data.entity.CommentEntity
 import com.example.matestudy.data.entity.PostEntity
 import com.example.matestudy.data.repository.AuthRepository
 import com.example.matestudy.data.repository.ForumRepository
-import com.example.matestudy.data.toPost
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 

@@ -70,15 +70,13 @@ dependencies {
 
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
-    // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-storage-ktx")   // nếu cần upload ảnh đại diện/file đính kèm
+    implementation("com.google.firebase:firebase-storage-ktx")
 
     implementation("androidx.compose.material:material-icons-extended")
 
-// Coil vẫn giữ để load ảnh
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("com.google.firebase:firebase-analytics")
 }

@@ -16,8 +16,6 @@ class ScheduleRepository(private val firestore: FirestoreDataSource) {
         firestore.insertHocKy(hocKy)
     }
 
-    suspend fun updateHocKy(hocKy: HocKyEntity) = firestore.updateHocKy(hocKy)
-
     suspend fun deleteHocKy(id: Long) = firestore.deleteHocKy(id)
 
     // ────────────────────────────────────────────────
@@ -34,8 +32,6 @@ class ScheduleRepository(private val firestore: FirestoreDataSource) {
 
     suspend fun insertMonHoc(monHoc: MonHocEntity): Long =
         firestore.insertMonHoc(monHoc)
-
-    suspend fun updateMonHoc(monHoc: MonHocEntity) = firestore.updateMonHoc(monHoc)
 
     suspend fun deleteMonHoc(id: Long) = firestore.deleteMonHoc(id)
 
