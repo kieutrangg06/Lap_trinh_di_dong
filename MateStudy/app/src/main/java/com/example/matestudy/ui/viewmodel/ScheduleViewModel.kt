@@ -280,4 +280,21 @@ class ScheduleViewModel(
 
         loadEvents(lich.sinhVienId)
     }
+
+    fun setEventToEdit(event: Event) {
+        _eventToEdit.value = event
+    }
+
+    fun clearEventToEdit() {
+        _eventToEdit.value = null
+    }
+
+    fun changeWeek(delta: Int) {
+        _currentMonth.value = _currentMonth.value.plusWeeks(delta.toLong())
+
+        viewModelScope.launch {
+            val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: return@launch
+            loadEvents(userId)
+        }
+    }
 }

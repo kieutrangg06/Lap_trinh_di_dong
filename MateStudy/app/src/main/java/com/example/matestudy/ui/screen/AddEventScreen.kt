@@ -42,15 +42,29 @@ fun AddEventScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    var tieuDe by remember { mutableStateOf(eventToEdit?.title ?: "") }
-    var diaDiem by remember { mutableStateOf(eventToEdit?.location ?: "") }
-    var lapLai by remember { mutableStateOf(eventToEdit?.repeat ?: "khong") }
-    var selectedColor by remember { mutableStateOf(eventToEdit?.color ?: "#3788d8") }
+    var tieuDe by remember { mutableStateOf("") }
+    var diaDiem by remember { mutableStateOf("") }
+    var lapLai by remember { mutableStateOf("khong") }
+    var selectedColor by remember { mutableStateOf("#3788d8") }
 
-    var selectedNgayBd by remember { mutableStateOf(eventToEdit?.date ?: LocalDate.now()) }
-    var selectedNgayKt by remember { mutableStateOf(eventToEdit?.date ?: LocalDate.now()) }
-    var selectedGioBd by remember { mutableStateOf(eventToEdit?.startTime ?: LocalTime.of(8, 0)) }
-    var selectedGioKt by remember { mutableStateOf(eventToEdit?.endTime ?: LocalTime.of(10, 0)) }
+    var selectedNgayBd by remember { mutableStateOf(LocalDate.now()) }
+    var selectedNgayKt by remember { mutableStateOf(LocalDate.now()) }
+    var selectedGioBd by remember { mutableStateOf(LocalTime.of(8, 0)) }
+    var selectedGioKt by remember { mutableStateOf(LocalTime.of(10, 0)) }
+
+    LaunchedEffect(eventToEdit) {
+        eventToEdit?.let {
+            tieuDe = it.title
+            diaDiem = it.location ?: ""
+            lapLai = "khong"
+            selectedColor = it.color
+
+            selectedNgayBd = it.date
+            selectedNgayKt = it.date
+            selectedGioBd = it.startTime ?: LocalTime.of(8, 0)
+            selectedGioKt = it.endTime ?: LocalTime.of(10, 0)
+        }
+    }
 
     val colors = listOf("#3788d8", "#e67c73", "#f4511e", "#f6bf26", "#33b679", "#0b8043", "#8e24aa")
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")

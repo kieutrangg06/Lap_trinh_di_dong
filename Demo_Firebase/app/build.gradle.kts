@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+    implementation(libs.androidx.compose.runtime)
 
     // --- 5. Testing (Giữ nguyên) ---
     testImplementation(libs.junit)

@@ -2,11 +2,14 @@ package com.example.matestudy.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -20,7 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.times
 import androidx.navigation.NavHostController
+import com.example.matestudy.data.Event
 import com.example.matestudy.ui.theme.*
 import com.example.matestudy.ui.viewmodel.ScheduleViewModel
 import kotlinx.coroutines.launch
@@ -33,6 +38,8 @@ fun ScheduleScreen(
     viewModel: ScheduleViewModel,
     navController: NavHostController
 ) {
+    var viewMode by remember { mutableStateOf("month") } // month | week
+
     val currentMonth by viewModel.currentMonth.collectAsState()
     val events by viewModel.events.collectAsState()
     val selectedEvent by viewModel.selectedEvent.collectAsState()
@@ -62,17 +69,36 @@ fun ScheduleScreen(
         ) {
             MonthHeader(
                 currentMonth = currentMonth,
-                onPreviousMonth = { viewModel.changeMonth(-1) },
-                onNextMonth = { viewModel.changeMonth(1) }
+                onPreviousMonth = {
+                    if (viewMode == "month") viewModel.changeMonth(-1)
+                    else viewModel.changeWeek(-1)
+                },
+                onNextMonth = {
+                    if (viewMode == "month") viewModel.changeMonth(1)
+                    else viewModel.changeWeek(1)
+                }
+            )
+
+            ViewModeSelector(
+                selected = viewMode,
+                onSelect = { viewMode = it }
             )
 
             WeekDaysRow(daysOfWeek)
 
-            CalendarGrid(
-                currentMonth = currentMonth,
-                events = events,
-                onSelectEvent = { viewModel.selectEvent(it) }
-            )
+            if (viewMode == "month") {
+                CalendarGrid(
+                    currentMonth = currentMonth,
+                    events = events,
+                    onSelectEvent = { viewModel.selectEvent(it) }
+                )
+            } else {
+                WeeklyCalendarGrid(
+                    currentDate = currentMonth,
+                    events = events,
+                    onSelectEvent = { viewModel.selectEvent(it) }
+                )
+            }
         }
     }
 
@@ -93,8 +119,10 @@ fun ScheduleScreen(
         event = selectedEvent,
         onDismiss = { viewModel.clearSelectedEvent() },
         onEdit = {
-            viewModel.clearSelectedEvent()
-            navController.navigate("edit_event")
+            selectedEvent?.let {
+                viewModel.setEventToEdit(it) // lưu event cần sửa
+                navController.navigate("edit_event")
+            }
         },
         onDelete = {
             coroutineScope.launch {
@@ -105,6 +133,210 @@ fun ScheduleScreen(
     )
 }
 
+@Composable
+private fun ViewModeSelector(
+    selected: String,
+    onSelect: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        listOf("month" to "Tháng", "week" to "Tuần").forEach { (mode, label) ->
+            Surface(
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .clickable { onSelect(mode) },
+                shape = RoundedCornerShape(20.dp),
+                color = if (selected == mode) PrimaryPink else Color.White,
+                shadowElevation = 2.dp
+            ) {
+                Text(
+                    text = label,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                    color = if (selected == mode) Color.White else PrimaryPink,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeeklyCalendarGrid(
+    currentDate: LocalDate,
+    events: List<Event>,
+    onSelectEvent: (Event) -> Unit
+) {
+    val startOfWeek = currentDate.minusDays(currentDate.dayOfWeek.value % 7L)
+
+    val startHour = 0
+    val endHour = 23
+
+    val hourHeight = 80.dp
+    val dayWidth = 100.dp
+    val headerHeight = 40.dp
+
+    val verticalScroll = rememberScrollState()
+    val horizontalScroll = rememberScrollState()
+
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .horizontalScroll(horizontalScroll)
+    ) {
+
+        // Cột timeline giờ
+        Column(
+            modifier = Modifier
+                .width(50.dp)
+                .verticalScroll(verticalScroll)
+        ) {
+            Spacer(modifier = Modifier.height(headerHeight))
+
+            for (hour in startHour..endHour) {
+                Box(
+                    modifier = Modifier.height(hourHeight),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    Text(
+                        text = String.format("%02dh", hour),
+                        fontSize = 12.sp,
+                        color = TextSecondary
+                    )
+                }
+            }
+        }
+
+        // 7 ngày
+        Row(
+            modifier = Modifier
+                .verticalScroll(verticalScroll)
+        ) {
+            repeat(7) { index ->
+                val date = startOfWeek.plusDays(index.toLong())
+                val isToday = date == LocalDate.now()
+
+                Box(
+                    modifier = Modifier
+                        .width(dayWidth)
+                        .height(headerHeight + hourHeight * 24)
+                        .background(
+                            if (isToday) Color(0x12FF69B4)
+                            else Color.White
+                        )
+                ) {
+
+                    // header ngày
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(headerHeight),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = when (index) {
+                                        0 -> "CN"
+                                        1 -> "T2"
+                                        2 -> "T3"
+                                        3 -> "T4"
+                                        4 -> "T5"
+                                        5 -> "T6"
+                                        else -> "T7"
+                                    },
+                                    fontSize = 11.sp,
+                                    color = TextSecondary
+                                )
+
+                                Text(
+                                    text = date.dayOfMonth.toString(),
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isToday) PrimaryPink else TextPrimary
+                                )
+                            }
+                        }
+
+                        // grid line từng giờ
+                        for (hour in startHour..endHour) {
+                            HorizontalDivider(
+                                thickness = 0.5.dp,
+                                color = Color.LightGray.copy(alpha = 0.4f)
+                            )
+                            Spacer(modifier = Modifier.height(hourHeight))
+                        }
+                    }
+
+                    // events
+                    events.filter { it.date == date }
+                        .forEach { event ->
+
+                            val start = event.startTime ?: return@forEach
+                            val end = event.endTime ?: return@forEach
+
+                            val startMinutes = start.hour * 60 + start.minute
+                            val endMinutes = end.hour * 60 + end.minute
+                            val duration = endMinutes - startMinutes
+
+                            val topOffset =
+                                headerHeight + (startMinutes / 60f) * hourHeight
+
+                            val eventHeight =
+                                (duration / 60f) * hourHeight
+
+                            val eventColor = try {
+                                Color(android.graphics.Color.parseColor(event.color))
+                            } catch (e: Exception) {
+                                PrimaryPink
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .offset(y = topOffset)
+                                    .padding(horizontal = 4.dp)
+                                    .fillMaxWidth()
+                                    .height(eventHeight)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(eventColor.copy(alpha = 0.9f))
+                                    .clickable { onSelectEvent(event) }
+                                    .padding(6.dp)
+                            ) {
+                                Column {
+                                    Text(
+                                        text = event.title,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp,
+                                        maxLines = 2
+                                    )
+
+                                    Text(
+                                        text = "${start} - ${end}",
+                                        color = Color.White.copy(alpha = 0.9f),
+                                        fontSize = 9.sp
+                                    )
+
+                                    event.location?.let {
+                                        Text(
+                                            text = it,
+                                            color = Color.White.copy(alpha = 0.85f),
+                                            fontSize = 9.sp,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                }
+            }
+        }
+    }
+}
 // ────────────────────────────────────────────────
 // 1. COMPONENT HEADER & WEEKDAYS
 // ────────────────────────────────────────────────

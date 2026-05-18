@@ -109,8 +109,8 @@ fun RegisterScreen(navController: NavController) {
                             val userMap = hashMapOf(
                                 "uid" to userId,
                                 "email" to email,
-                                "role" to "customer",
-                                "createdAt" to com.google.firebase.Timestamp.now()
+                                "password" to password,
+                                "role" to "customer"
                             )
                             if (userId != null) {
                                 db.collection("users").document(userId)

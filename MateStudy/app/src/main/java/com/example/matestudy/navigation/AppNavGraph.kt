@@ -14,7 +14,6 @@ import androidx.navigation.navArgument
 import com.example.matestudy.data.remote.FirestoreDataSource
 import com.example.matestudy.data.repository.*
 import com.example.matestudy.ui.screen.*
-import com.example.matestudy.ui.screen.ChooseClassScreen
 import com.example.matestudy.ui.viewmodel.*
 
 @Composable
@@ -23,22 +22,22 @@ fun AppNavGraph(authViewModel: AuthViewModel) {
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
 
     if (isLoggedIn) {
-        MainAppScreen(rootNavController = rootNavController, authViewModel = authViewModel)
+        MainAppScreen(rootNavController, authViewModel)
     } else {
-        AuthNavGraph(navController = rootNavController, authViewModel = authViewModel)
+        AuthNavGraph(rootNavController, authViewModel)
     }
 }
-
-// ────────────────────────────────────────────────
-// 1. AUTH NAVIGATION (Login/Register)
-// ────────────────────────────────────────────────
 
 @Composable
 private fun AuthNavGraph(navController: NavHostController, authViewModel: AuthViewModel) {
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
             LoginScreen(
-                onLoginSuccess = { navController.navigate("main") { popUpTo(0) { inclusive = true } } },
+                onLoginSuccess = {
+                    navController.navigate("main") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
                 onRegisterClick = { navController.navigate("register") },
                 viewModel = authViewModel
             )
@@ -51,18 +50,17 @@ private fun AuthNavGraph(navController: NavHostController, authViewModel: AuthVi
             )
         }
         composable("main") {
-            MainAppScreen(rootNavController = navController, authViewModel = authViewModel)
+            MainAppScreen(navController, authViewModel)
         }
     }
 }
 
-// ────────────────────────────────────────────────
-// 2. MAIN APPLICATION (Scaffold + BottomBar)
-// ────────────────────────────────────────────────
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MainAppScreen(rootNavController: NavHostController, authViewModel: AuthViewModel) {
+private fun MainAppScreen(
+    rootNavController: NavHostController,
+    authViewModel: AuthViewModel
+) {
     val bottomNavController = rememberNavController()
     val firestoreDataSource = remember { FirestoreDataSource() }
 
@@ -74,6 +72,15 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
 
     val currentUser by authViewModel.currentUser.collectAsState()
     val isAdmin = currentUser?.vaiTro == "admin"
+
+    // ✅ FIX: DÙNG CHUNG 1 VIEWMODEL
+    val scheduleViewModel: ScheduleViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return ScheduleViewModel(scheduleRepo, authRepo) as T
+            }
+        }
+    )
 
     val forumViewModel: ForumViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -88,18 +95,19 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
         authViewModel = authViewModel,
         onLogout = {
             authViewModel.logout()
-            rootNavController.navigate("login") { popUpTo(0) { inclusive = true } }
+            rootNavController.navigate("login") {
+                popUpTo(0) { inclusive = true }
+            }
         }
     ) { innerPadding ->
+
         NavHost(
             navController = bottomNavController,
             startDestination = if (isAdmin) BottomNavItem.AdminForum.route else BottomNavItem.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
 
-            // ────────────────────────────────────────────────
-            // 3. COMMON ROUTES (User & Admin)
-            // ────────────────────────────────────────────────
+            // ───────── COMMON ─────────
 
             composable(
                 "post_detail/{postId}",
@@ -118,22 +126,21 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                 arguments = listOf(navArgument("monHocId") { type = NavType.LongType })
             ) {
                 val monHocId = it.arguments?.getLong("monHocId") ?: 0L
-                val reviewVm: ReviewViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+                val vm: ReviewViewModel = viewModel(factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T =
                         ReviewViewModel(reviewRepo, authRepo, scheduleRepo) as T
                 })
                 ReviewDetailScreen(
-                    viewModel = reviewVm,
+                    viewModel = vm,
                     monHocId = monHocId,
                     onBack = { bottomNavController.popBackStack() }
                 )
             }
 
-            // ────────────────────────────────────────────────
-            // 4. USER ROUTES
-            // ────────────────────────────────────────────────
+            // ───────── USER ─────────
 
             if (!isAdmin) {
+
                 composable(BottomNavItem.Home.route) {
                     HomeScreen(
                         forumViewModel = forumViewModel,
@@ -186,48 +193,37 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                     )
                 }
 
+                // ✅ SCHEDULE FIX
                 composable(BottomNavItem.Schedule.route) {
-                    val vm: ScheduleViewModel = viewModel(factory = object : ViewModelProvider.Factory {
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            ScheduleViewModel(scheduleRepo, authRepo) as T
-                    })
-                    ScheduleScreen(viewModel = vm, navController = bottomNavController)
+                    ScheduleScreen(scheduleViewModel, bottomNavController)
                 }
 
                 composable("choose_class") {
-                    val vm: ScheduleViewModel = viewModel(factory = object : ViewModelProvider.Factory {
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            ScheduleViewModel(scheduleRepo, authRepo) as T
-                    })
                     ChooseClassScreen(
-                        viewModel = vm,
+                        viewModel = scheduleViewModel,
                         onBack = { bottomNavController.popBackStack() }
                     )
                 }
 
                 composable("add_personal_event") {
-                    val vm: ScheduleViewModel = viewModel(factory = object : ViewModelProvider.Factory {
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            ScheduleViewModel(scheduleRepo, authRepo) as T
-                    })
                     AddEventScreen(
-                        viewModel = vm,
+                        viewModel = scheduleViewModel,
                         onBack = { bottomNavController.popBackStack() },
                         onSuccess = { bottomNavController.popBackStack() }
                     )
                 }
 
                 composable("edit_event") {
-                    val vm: ScheduleViewModel = viewModel(factory = object : ViewModelProvider.Factory {
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            ScheduleViewModel(scheduleRepo, authRepo) as T
-                    })
-                    val eventToEdit by vm.selectedEvent.collectAsState()
+                    val eventToEdit by scheduleViewModel.eventToEdit.collectAsState()
+
                     AddEventScreen(
-                        viewModel = vm,
+                        viewModel = scheduleViewModel,
                         eventToEdit = eventToEdit,
                         onBack = { bottomNavController.popBackStack() },
-                        onSuccess = { bottomNavController.popBackStack() }
+                        onSuccess = {
+                            scheduleViewModel.clearEventToEdit()
+                            bottomNavController.popBackStack()
+                        }
                     )
                 }
 
@@ -246,53 +242,52 @@ private fun MainAppScreen(rootNavController: NavHostController, authViewModel: A
                 }
             }
 
-            // ────────────────────────────────────────────────
-            // 5. ADMIN ROUTES
-            // ────────────────────────────────────────────────
+            // ───────── ADMIN ─────────
 
             if (isAdmin) {
+
                 composable(BottomNavItem.AdminForum.route) {
-                    val adminForumVm: AdminForumViewModel = viewModel(
+                    val vm: AdminForumViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                 return AdminForumViewModel(forumRepo) as T
                             }
                         }
                     )
-                    AdminForumScreen(viewModel = adminForumVm)
+                    AdminForumScreen(vm)
                 }
 
                 composable(BottomNavItem.AdminStudyData.route) {
-                    val adminViewModel: AdminViewModel = viewModel(
+                    val vm: AdminViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                 return AdminViewModel(scheduleRepo) as T
                             }
                         }
                     )
-                    AdminManageScreen(viewModel = adminViewModel)
+                    AdminManageScreen(vm)
                 }
 
                 composable(BottomNavItem.AdminRating.route) {
-                    val adminReviewVm: AdminReviewViewModel = viewModel(
+                    val vm: AdminReviewViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                 return AdminReviewViewModel(reviewRepo, scheduleRepo) as T
                             }
                         }
                     )
-                    AdminRatingScreen(viewModel = adminReviewVm)
+                    AdminRatingScreen(vm)
                 }
 
                 composable(BottomNavItem.AdminUsers.route) {
-                    val adminUserVm: AdminUserViewModel = viewModel(
+                    val vm: AdminUserViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                 return AdminUserViewModel(authRepo) as T
                             }
                         }
                     )
-                    AdminUsersScreen(viewModel = adminUserVm)
+                    AdminUsersScreen(vm)
                 }
             }
         }
