@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "51233365529",
-    "project_id": "matestudy-ffe87",
-    "storage_bucket": "matestudy-ffe87.firebasestorage.app"
+    "project_number": "219190942912",
+    "project_id": "matestudy-d79a8",
+    "storage_bucket": "matestudy-d79a8.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:51233365529:android:c4c0f7a21186bc73e9d488",
+        "mobilesdk_app_id": "1:219190942912:android:55353591959968bd326125",
         "android_client_info": {
           "package_name": "com.example.matestudy"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAVNU5hqrU4ZE0wNH4rU9MlgH9jRD9Wdng"
+          "current_key": "AIzaSyApy3plIY4B_VbG_EHvIBwUbq-PKF_rF4g"
         }
       ],
       "services": {
