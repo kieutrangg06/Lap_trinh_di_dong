@@ -2,19 +2,11 @@ package com.example.matestudy.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.matestudy.data.entity.ReviewWithUser
+import com.example.matestudy.data.entity.MonHocWithReviews
 import com.example.matestudy.data.repository.ReviewRepository
 import com.example.matestudy.data.repository.ScheduleRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-
-data class MonHocWithReviews(
-    val monHocId: Long,
-    val tenMonHoc: String,
-    val averageRating: Double?,
-    val reviewCount: Int,
-    val reviews: List<ReviewWithUser>
-)
 
 class AdminReviewViewModel(
     private val reviewRepo: ReviewRepository,

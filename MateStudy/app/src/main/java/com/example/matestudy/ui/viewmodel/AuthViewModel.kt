@@ -17,19 +17,23 @@ class AuthViewModel(
     // ────────────────────────────────────────────────
 
     val isLoggedIn: StateFlow<Boolean> = repository.getCurrentUserFlow()
-        .map { it != null }
+        .map { it != null } // Nếu user khác null -> true (đã login), ngược lại -> false
         .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = false
+            scope = viewModelScope, // Duy trì luồng theo vòng đời ViewModel
+            started = SharingStarted.WhileSubscribed(5000), // Tạm ngắt luồng sau 5s nếu thoát màn hình
+            initialValue = false // Giá trị ban đầu khi mở app là chưa đăng nhập
         )
 
+    // Dòng dữ liệu (StateFlow) chứa thông tin sạch của User đang đăng nhập (dùng vẽ UI)
     private val _currentUser = MutableStateFlow(User())
     val currentUser: StateFlow<User> = _currentUser.asStateFlow()
 
     init {
+        // Khối lệnh tự động chạy khi AuthViewModel được sinh ra
         viewModelScope.launch {
+            // Lắng nghe xem có UserEntity nào được cập nhật từ tầng dưới không
             repository.getCurrentUserFlow().collect { entity ->
+                // Nếu có thực thể -> Chuyển sang lớp User sạch (toUserDomain) rồi ném ra UI, nếu null -> ném object User rỗng
                 _currentUser.value = entity?.toUserDomain() ?: User()
             }
         }

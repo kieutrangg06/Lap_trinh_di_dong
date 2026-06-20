@@ -40,7 +40,7 @@ class ReviewRepository(
         firestore.updateReviewStatus(ngayDang.toString(), "da_duyet")
 
         val query =
-            firestore.getAllReviewsForAdmin().firstOrNull()?.find { it.ngay_dang == ngayDang }
+            firestore.getAllReviews().firstOrNull()?.find { it.ngay_dang == ngayDang }
         query?.let {
             thongBaoRepo.createThongBao(
                 ThongBaoEntity(

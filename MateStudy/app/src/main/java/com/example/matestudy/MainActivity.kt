@@ -14,12 +14,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity() { //lớp Activity hỗ trợ Jetpack Compose
 
-    private val firestoreDataSource by lazy { FirestoreDataSource() }
+    //khởi tạo AuthViewModel, Navigation
+    private val firestoreDataSource by lazy { FirestoreDataSource() } //trì hoãn việc khởi tạo, chỉ được tạo khi có gọi
 
-    @RequiresApi(Build.VERSION_CODES.S)
-    override fun onCreate(savedInstanceState: Bundle?) {
+    @RequiresApi(Build.VERSION_CODES.S) //Android 12 (API 31 - Codenamed S) trở lên
+    override fun onCreate(savedInstanceState: Bundle?) { //savedInstanceState chứa trạng thái cũ của màn hình
         super.onCreate(savedInstanceState)
 
         setContent {

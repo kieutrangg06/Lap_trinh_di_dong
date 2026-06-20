@@ -2,7 +2,7 @@ package com.example.matestudy.data
 
 import com.example.matestudy.data.entity.CommentEntity
 import com.example.matestudy.data.entity.PostEntity
-import com.example.matestudy.data.dao.PostWithLikeCount
+import com.example.matestudy.data.entity.PostWithLikeCount
 
 data class Post(
     val id: Long = 0,

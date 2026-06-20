@@ -15,10 +15,8 @@ class AdminUserViewModel(private val repository: AuthRepository) : ViewModel() {
     val searchQuery = _searchQuery.asStateFlow()
 
     private val _filterStatus = MutableStateFlow("Tất cả")
-    val filterStatus = _filterStatus.asStateFlow()
 
     private val _filterNienKhoa = MutableStateFlow("Tất cả")
-    val filterNienKhoa = _filterNienKhoa.asStateFlow()
 
     // ────────────────────────────────────────────────
     // 1. LOGIC LỌC DỮ LIỆU (COMBINE FLOWS)

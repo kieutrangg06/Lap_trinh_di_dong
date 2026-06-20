@@ -20,7 +20,7 @@ class AdminForumViewModel(private val repository: ForumRepository) : ViewModel()
 
     val filteredPosts: StateFlow<List<Post>> = combine(
         _allPosts, _filterStatus, _searchQuery
-    ) { posts, status, query ->
+    ) { posts, status, query ->// Cứ mỗi khi 1 trong 3 thằng này thay đổi, khối lệnh bên dưới sẽ tự động chạy lại
         var result = posts
 
         if (status != "Tất cả") {
@@ -43,7 +43,10 @@ class AdminForumViewModel(private val repository: ForumRepository) : ViewModel()
         }
 
         result
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000), // Nếu Admin thoát màn hình quá 5 giây, luồng này sẽ tạm dừng để tiết kiệm pin/RAM
+        initialValue = emptyList() // Giá trị ban đầu khi chưa tải xong dữ liệu là danh sách rỗng
+    )
 
     // ────────────────────────────────────────────────
     // 2. CÁC HÀM CẬP NHẬT TRẠNG THÁI UI

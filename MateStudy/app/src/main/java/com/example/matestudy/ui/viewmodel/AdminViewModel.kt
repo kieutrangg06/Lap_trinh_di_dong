@@ -26,12 +26,14 @@ class AdminViewModel(private val scheduleRepository: ScheduleRepository) : ViewM
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val filteredMonHocList = combine(_selectedHocKy, _searchQuery) { hk, query ->
-        hk to query
+        hk to query // Trộn Học kỳ đang chọn và Từ khóa tìm kiếm thành một cặp (Pair)
     }.flatMapLatest { (hk, query) ->
+        // flatMapLatest: Mỗi khi Admin đổi Học kỳ hoặc đổi từ khóa gõ, luồng cũ sẽ bị hủy để chạy luồng mới
         if (hk == null) {
             flowOf(emptyList())
         } else {
             scheduleRepository.getMonHocByHocKy(hk.id).map { list ->
+                // Lọc tiếp: Chỉ giữ lại những môn học có tên chứa từ khóa Admin đang tìm kiếm
                 list.filter { it.tenMon.contains(query, ignoreCase = true) }
             }
         }

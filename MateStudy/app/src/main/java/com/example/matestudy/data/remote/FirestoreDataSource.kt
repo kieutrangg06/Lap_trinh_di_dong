@@ -1,6 +1,5 @@
 package com.example.matestudy.data.remote
 
-import com.example.matestudy.data.dao.PostWithLikeCount
 import com.example.matestudy.data.entity.*
 import com.google.firebase.firestore.*
 import com.google.firebase.firestore.ktx.firestore
@@ -21,7 +20,7 @@ class FirestoreDataSource {
     init {
         try {
             db.firestoreSettings = firestoreSettings {
-                isPersistenceEnabled = true
+                isPersistenceEnabled = true// Kích hoạt tính năng lưu cache offline
             }
         } catch (_: Exception) {
         }
@@ -31,6 +30,7 @@ class FirestoreDataSource {
     // 1. USER - Quản lý người dùng & phiên đăng nhập
     // ────────────────────────────────────────────────
 
+    // Lắng nghe realtime xem tài khoản nào đang giữ phiên đăng nhập hiện tại
     fun getCurrentUserFlow(): Flow<UserEntity?> = callbackFlow {
         val listener = db.collection("sessions").document(SESSION_ID)
             .addSnapshotListener { snapshot, error ->
@@ -38,12 +38,14 @@ class FirestoreDataSource {
                     close(error)
                     return@addSnapshotListener
                 }
+                // Chuyển dữ liệu từ Firestore JSON thành object UserEntity
                 val user = snapshot?.toObject(UserEntity::class.java)
-                trySend(user)
+                trySend(user)// Bắn dữ liệu về cho nơi nhận (ViewModel)
             }
-        awaitClose { listener.remove() }
+        awaitClose { listener.remove() }// Khi không dùng luồng này nữa thì hủy để tiết kiệm RAM/Mạng
     }
 
+    // Ghi đè thông tin user hiện tại vào session (Khi đăng nhập thành công)
     suspend fun setCurrentSession(user: UserEntity) {
         db.collection("sessions").document(SESSION_ID).set(user).await()
     }
@@ -52,6 +54,7 @@ class FirestoreDataSource {
         db.collection("sessions").document(SESSION_ID).delete().await()
     }
 
+    // Tìm kiếm xem tên đăng nhập này đã tồn tại chưa (Dùng khi đăng ký / đăng nhập)
     suspend fun findByUsername(username: String): UserEntity? {
         val snap = db.collection("users")
             .whereEqualTo("tenDangNhap", username)
@@ -111,7 +114,7 @@ class FirestoreDataSource {
         }
         db.collection("users")
             .document(user.id.toString())
-            .set(user, SetOptions.merge())
+            .set(user, SetOptions.merge()) //chỉ ghi đè những trường có thay đổi, giữ lại các trường cũ
             .await()
     }
 
@@ -166,45 +169,38 @@ class FirestoreDataSource {
         val listener = db.collection("bai_viet_dien_dan")
             .whereEqualTo("trang_thai", "da_duyet")
             .addSnapshotListener { snap, e ->
-                if (e != null) {
-                    close(e)
-                    return@addSnapshotListener
-                }
+                if (e != null) { close(e); return@addSnapshotListener }
 
                 val postEntities = snap?.toObjects(PostEntity::class.java) ?: emptyList()
 
+                // Mở một Coroutine Scope để chạy đa luồng tính toán số tim
                 launch {
                     try {
+                        // Chạy song song (async) việc đếm tim cho từng bài viết để tránh bị đứng màn hình (Lag)
                         val deferredPosts = postEntities.map { post ->
                             async(Dispatchers.IO) {
                                 val likesSnap = db.collection("luot_thich_bai_viet")
-                                    .whereEqualTo("bai_viet_id", post.id)
-                                    .get()
-                                    .await()
+                                    .whereEqualTo("bai_viet_id", post.id).get().await()
 
-                                val likeCount = likesSnap.size()
+                                val likeCount = likesSnap.size() // Đếm xem bộ sưu tập này có bao nhiêu document lượt thích
 
+                                // Gộp bài viết thô và số tim vào Class trung gian
                                 PostWithLikeCount(
-                                    id = post.id,
-                                    tac_gia_id = post.tac_gia_id,
-                                    tieu_de = post.tieu_de,
-                                    noi_dung = post.noi_dung,
-                                    file_dinh_kem = post.file_dinh_kem,
-                                    trang_thai = post.trang_thai,
-                                    ngay_dang = post.ngay_dang,
-                                    category = post.category,
-                                    likeCount = likeCount
+                                    id = post.id, tac_gia_id = post.tac_gia_id, tieu_de = post.tieu_de,
+                                    noi_dung = post.noi_dung, file_dinh_kem = post.file_dinh_kem,
+                                    trang_thai = post.trang_thai, ngay_dang = post.ngay_dang,
+                                    category = post.category, likeCount = likeCount
                                 )
                             }
                         }
 
-                        val featured = deferredPosts.awaitAll()
+                        val featured = deferredPosts.awaitAll() // Chờ cho tất cả các bài viết tính xong số tim
+                        // Sắp xếp: Nhiều tim xếp trước, nếu bằng tim thì bài nào mới đăng lên trước
                         val sortedFeatured = featured.sortedWith(
                             compareByDescending<PostWithLikeCount> { it.likeCount }
                                 .thenByDescending { it.ngay_dang }
                         )
-                        trySend(sortedFeatured)
-
+                        trySend(sortedFeatured) // Gửi danh sách đã sắp xếp về UI
                     } catch (ioException: Exception) {
                         trySend(emptyList())
                     }
@@ -241,6 +237,7 @@ class FirestoreDataSource {
         db.collection("luot_thich_bai_viet").document(docId).delete().await()
     }
 
+    // Kiểm tra xem sinh viên hiện tại đã thả tim bài viết này chưa
     suspend fun getLikeByUser(postId: Long, userId: Long): LikeEntity? {
         val docId = "${postId}_$userId"
         return db.collection("luot_thich_bai_viet").document(docId).get().await()
@@ -285,7 +282,7 @@ class FirestoreDataSource {
         val likes = db.collection("luot_thich_bai_viet").whereEqualTo("bai_viet_id", postId).get().await()
 
         db.runBatch { batch ->
-            comments.forEach { batch.delete(it.reference) }
+            comments.forEach { batch.delete(it.reference) }// Thêm lệnh xóa từng comment vào hàng đợi batch
             likes.forEach { batch.delete(it.reference) }
         }.await()
     }
@@ -319,8 +316,8 @@ class FirestoreDataSource {
                     return@addSnapshotListener
                 }
                 val avg = snap?.documents
-                    ?.mapNotNull { it.getLong("diem_sao")?.toDouble() }
-                    ?.average()
+                    ?.mapNotNull { it.getLong("diem_sao")?.toDouble() } // Lấy toàn bộ điểm sao ra danh sách số thực
+                    ?.average() // Hàm tự động tính trung bình cộng của Kotlin
                 trySend(if (avg?.isNaN() == true) null else avg)
             }
         awaitClose { listener.remove() }
@@ -336,7 +333,7 @@ class FirestoreDataSource {
         awaitClose { listener.remove() }
     }
 
-    fun getAllReviewsForAdmin(): Flow<List<ReviewEntity>> = callbackFlow {
+    fun getAllReviews(): Flow<List<ReviewEntity>> = callbackFlow {
         val listener = db.collection("danh_gia_mon_giang_vien")
             .orderBy("ngay_dang", Query.Direction.DESCENDING)
             .addSnapshotListener { snap, e ->
@@ -419,9 +416,9 @@ class FirestoreDataSource {
         awaitClose { listener.remove() }
     }
 
-    suspend fun updateHocKy(hocKy: HocKyEntity) {
-        db.collection("hoc_ky").document(hocKy.id.toString()).set(hocKy).await()
-    }
+//    suspend fun updateHocKy(hocKy: HocKyEntity) {
+//        db.collection("hoc_ky").document(hocKy.id.toString()).set(hocKy).await()
+//    }
 
     suspend fun deleteHocKy(hocKyId: Long) {
         db.collection("hoc_ky").document(hocKyId.toString()).delete().await()
@@ -472,9 +469,9 @@ class FirestoreDataSource {
         awaitClose { listener.remove() }
     }
 
-    suspend fun updateMonHoc(monHoc: MonHocEntity) {
-        db.collection("mon_hoc").document(monHoc.id.toString()).set(monHoc).await()
-    }
+//    suspend fun updateMonHoc(monHoc: MonHocEntity) {
+//        db.collection("mon_hoc").document(monHoc.id.toString()).set(monHoc).await()
+//    }
 
     suspend fun deleteMonHoc(monHocId: Long) {
         db.collection("mon_hoc").document(monHocId.toString()).delete().await()
