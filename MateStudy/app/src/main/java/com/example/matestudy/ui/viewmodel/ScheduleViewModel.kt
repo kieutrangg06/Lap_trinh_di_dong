@@ -69,7 +69,10 @@ class ScheduleViewModel(
                     val endDate = LocalDate.parse(it.ngayKetThuc, formatter)
                     val thuInt = dayMap[it.thu] ?: -1
 
+                    // Thuật toán quét: Chạy vòng lặp từ ngày bắt đầu đến ngày kết thúc môn học
+                    //đến tempDate vượt quá ngày endDate
                     while (!tempDate.isAfter(endDate)) {
+                        // Nếu ngày hiện tại trùng với Thứ của môn học đó
                         if (tempDate.dayOfWeek.value == thuInt) {
                             eventList.add(
                                 createEventFromLich(
@@ -78,6 +81,7 @@ class ScheduleViewModel(
                                 )
                             )
                         }
+                        // Tăng thêm 1 ngày để kiểm tra ngày tiếp theo
                         tempDate = tempDate.plusDays(1)
                     }
                 }
@@ -103,9 +107,13 @@ class ScheduleViewModel(
             }
         }
 
+        // Lấy ngày đầu tiên của tháng hiện tại đang xem trên giao diện
         val firstOfMonth = _currentMonth.value.withDayOfMonth(1)
+        // Lấy ngày cuối cùng của tháng hiện tại đó
         val lastOfMonth = firstOfMonth.plusMonths(1).minusDays(1)
 
+        // Chỉ lấy những sự kiện nằm trong khoảng từ (Đầu tháng - 7 ngày) đến (Cuối tháng + 7 ngày)
+        // Việc này giúp lịch hiển thị mượt mà các ngày dư của tuần trước/tuần sau ở rìa giao diện tháng.
         _events.value = eventList.filter {
             !it.date.isBefore(firstOfMonth.minusDays(7)) &&
                     !it.date.isAfter(lastOfMonth.plusDays(7))
@@ -161,7 +169,11 @@ class ScheduleViewModel(
     // 5. PUBLIC ACTIONS - TƯƠNG TÁC UI & THỜI GIAN
     // ────────────────────────────────────────────────
 
+    /**
+     * Chuyển đổi tháng hiển thị khi nhấn nút Next/Previous (Thay đổi số delta là +1 hoặc -1)
+     */
     fun changeMonth(delta: Int) {
+        // Cập nhật giá trị tháng hiện tại bằng cách cộng/trừ số tháng tương ứng
         _currentMonth.value = _currentMonth.value.plusMonths(delta.toLong())
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserFlow().firstOrNull()?.id ?: return@launch

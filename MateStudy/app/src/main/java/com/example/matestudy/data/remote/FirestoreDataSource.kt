@@ -1,5 +1,7 @@
 package com.example.matestudy.data.remote
 
+import com.example.matestudy.data.PostWithLikeCount
+import com.example.matestudy.data.ReviewWithUser
 import com.example.matestudy.data.entity.*
 import com.google.firebase.firestore.*
 import com.google.firebase.firestore.ktx.firestore
@@ -54,7 +56,7 @@ class FirestoreDataSource {
         db.collection("sessions").document(SESSION_ID).delete().await()
     }
 
-    // Tìm kiếm xem tên đăng nhập này đã tồn tại chưa (Dùng khi đăng ký / đăng nhập)
+    // Tìm kiếm xem tên đăng nhập/email này đã tồn tại chưa (Dùng khi đăng ký / đăng nhập)
     suspend fun findByUsername(username: String): UserEntity? {
         val snap = db.collection("users")
             .whereEqualTo("tenDangNhap", username)

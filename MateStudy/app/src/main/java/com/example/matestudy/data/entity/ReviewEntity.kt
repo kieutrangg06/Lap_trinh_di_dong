@@ -13,8 +13,3 @@ data class ReviewEntity(
     val trang_thai: String = "cho_duyet",
     val ngay_dang: Long = System.currentTimeMillis()
 )
-
-data class ReviewWithUser(
-    val review: ReviewEntity,
-    val tenDangNhap: String
-)

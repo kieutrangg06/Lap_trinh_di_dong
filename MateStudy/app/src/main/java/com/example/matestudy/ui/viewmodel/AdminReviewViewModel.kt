@@ -2,7 +2,7 @@ package com.example.matestudy.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.matestudy.data.entity.MonHocWithReviews
+import com.example.matestudy.data.MonHocWithReviews
 import com.example.matestudy.data.repository.ReviewRepository
 import com.example.matestudy.data.repository.ScheduleRepository
 import kotlinx.coroutines.flow.*
@@ -41,7 +41,7 @@ class AdminReviewViewModel(
             }
         }
 
-        val grouped = filteredReviews.groupBy { it.review.mon_hoc_id }
+        val grouped = filteredReviews.groupBy { it.review.mon_hoc_id }//phân loại và gom nhóm chúng lại thành một bảng dữ liệu dạng Map.
 
         grouped.mapNotNull { (monId, revs) ->
             if (monId == null) return@mapNotNull null

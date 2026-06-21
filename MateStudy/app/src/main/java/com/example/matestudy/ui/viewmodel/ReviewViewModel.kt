@@ -21,14 +21,14 @@ class ReviewViewModel(
     // 1. STATE & FLOWS DỮ LIỆU
     // ────────────────────────────────────────────────
 
-    private val _selectedMonHoc = MutableStateFlow<MonHocEntity?>(null)
-    val selectedMonHoc: StateFlow<MonHocEntity?> = _selectedMonHoc.asStateFlow()
+//    private val _selectedMonHoc = MutableStateFlow<MonHocEntity?>(null)
+//    val selectedMonHoc: StateFlow<MonHocEntity?> = _selectedMonHoc.asStateFlow()
 
-    private val _rating = MutableStateFlow(0)
-    val rating: StateFlow<Int> = _rating.asStateFlow()
+//    private val _rating = MutableStateFlow(0)
+//    val rating: StateFlow<Int> = _rating.asStateFlow()
 
-    private val _content = MutableStateFlow("")
-    val content: StateFlow<String> = _content.asStateFlow()
+//    private val _content = MutableStateFlow("")
+//    val content: StateFlow<String> = _content.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -43,64 +43,64 @@ class ReviewViewModel(
     // 2. CÁC HÀM CẬP NHẬT TRẠNG THÁI UI
     // ────────────────────────────────────────────────
 
-    fun setSelectedMonHoc(monHoc: MonHocEntity?) {
-        _selectedMonHoc.value = monHoc
-    }
+//    fun setSelectedMonHoc(monHoc: MonHocEntity?) {
+//        _selectedMonHoc.value = monHoc
+//    }
+//
+//    fun setRating(value: Int) {
+//        if (value in 1..5) _rating.value = value
+//    }
+//
+//    fun setContent(value: String) {
+//        _content.value = value
+//    }
 
-    fun setRating(value: Int) {
-        if (value in 1..5) _rating.value = value
-    }
-
-    fun setContent(value: String) {
-        _content.value = value
-    }
-
-    private fun resetForm() {
-        _selectedMonHoc.value = null
-        _rating.value = 0
-        _content.value = ""
-        _error.value = null
-    }
+//    private fun resetForm() {
+//        _selectedMonHoc.value = null
+//        _rating.value = 0
+//        _content.value = ""
+//        _error.value = null
+//    }
 
     // ────────────────────────────────────────────────
     // 3. THAO TÁC GỬI ĐÁNH GIÁ (SUBMIT)
     // ────────────────────────────────────────────────
 
-    fun submitReview(onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            val sinhVienId = authRepository.getCurrentUserFlow().first()?.id ?: run {
-                _error.value = "Bạn cần đăng nhập để đánh giá"
-                return@launch
-            }
-
-            val monHoc = _selectedMonHoc.value ?: run {
-                _error.value = "Vui lòng chọn môn học"
-                return@launch
-            }
-
-            if (_rating.value == 0 || _content.value.isBlank()) {
-                _error.value = "Vui lòng đánh giá sao và nhập nội dung"
-                return@launch
-            }
-
-            val review = ReviewEntity(
-                mon_hoc_id = monHoc.id,
-                sinh_vien_id = sinhVienId,
-                diem_sao = _rating.value,
-                noi_dung = _content.value.trim(),
-                trang_thai = "cho_duyet",
-                ngay_dang = System.currentTimeMillis()
-            )
-
-            try {
-                reviewRepository.insertReview(review)
-                resetForm()
-                onSuccess()
-            } catch (e: Exception) {
-                _error.value = "Lỗi khi gửi đánh giá: ${e.message}"
-            }
-        }
-    }
+//    fun submitReview(onSuccess: () -> Unit) {
+//        viewModelScope.launch {
+//            val sinhVienId = authRepository.getCurrentUserFlow().first()?.id ?: run {
+//                _error.value = "Bạn cần đăng nhập để đánh giá"
+//                return@launch
+//            }
+//
+//            val monHoc = _selectedMonHoc.value ?: run {
+//                _error.value = "Vui lòng chọn môn học"
+//                return@launch
+//            }
+//
+//            if (_rating.value == 0 || _content.value.isBlank()) {
+//                _error.value = "Vui lòng đánh giá sao và nhập nội dung"
+//                return@launch
+//            }
+//
+//            val review = ReviewEntity(
+//                mon_hoc_id = monHoc.id,
+//                sinh_vien_id = sinhVienId,
+//                diem_sao = _rating.value,
+//                noi_dung = _content.value.trim(),
+//                trang_thai = "cho_duyet",
+//                ngay_dang = System.currentTimeMillis()
+//            )
+//
+//            try {
+//                reviewRepository.insertReview(review)
+//                resetForm()
+//                onSuccess()
+//            } catch (e: Exception) {
+//                _error.value = "Lỗi khi gửi đánh giá: ${e.message}"
+//            }
+//        }
+//    }
 
     fun submitReviewNew(
         monHoc: MonHocEntity?,
